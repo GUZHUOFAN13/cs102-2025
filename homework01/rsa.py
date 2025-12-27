@@ -3,6 +3,14 @@ import typing as tp
 
 
 def is_prime(n: int) -> bool:
+    """
+    >>> is_prime(2)
+    True
+    >>> is_prime(11)
+    True
+    >>> is_prime(8)
+    False
+    """
     if n <= 1:
         return False
 
@@ -14,15 +22,27 @@ def is_prime(n: int) -> bool:
 
 
 def gcd(a: int, b: int) -> int:
+    """
+    >>> gcd(12, 15)
+    3
+    >>> gcd(3, 7)
+    1
+    """
     while b != 0:
         a, b = b, a % b
+
     return a
 
 
 def multiplicative_inverse(e: int, phi: int) -> int:
+    """
+    >>> multiplicative_inverse(7, 40)
+    23
+    """
     d = 1
     while (d * e) % phi != 1:
         d += 1
+
     return d
 
 
@@ -31,7 +51,7 @@ def generate_keypair(
 ) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[int, int]]:
     if not (is_prime(p) and is_prime(q)):
         raise ValueError("Both numbers must be prime.")
-    if p == q:
+    elif p == q:
         raise ValueError("p and q cannot be equal")
 
     n = p * q
