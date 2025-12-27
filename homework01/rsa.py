@@ -3,15 +3,6 @@ import typing as tp
 
 
 def is_prime(n: int) -> bool:
-    """
-    Tests to see if a number is prime.
-    >>> is_prime(2)
-    True
-    >>> is_prime(11)
-    True
-    >>> is_prime(8)
-    False
-    """
     if n <= 1:
         return False
 
@@ -23,29 +14,15 @@ def is_prime(n: int) -> bool:
 
 
 def gcd(a: int, b: int) -> int:
-    """
-    Euclid's algorithm for determining the greatest common divisor.
-    >>> gcd(12, 15)
-    3
-    >>> gcd(3, 7)
-    1
-    """
     while b != 0:
         a, b = b, a % b
-
     return a
 
 
 def multiplicative_inverse(e: int, phi: int) -> int:
-    """
-    Euclid's extended algorithm for finding the multiplicative inverse.
-    >>> multiplicative_inverse(7, 40)
-    23
-    """
     d = 1
     while (d * e) % phi != 1:
         d += 1
-
     return d
 
 
@@ -66,7 +43,7 @@ def generate_keypair(
 
     d = multiplicative_inverse(e, phi)
 
-    return ((e, n), (d, n))
+    return (e, n), (d, n)
 
 
 def encrypt(pk: tp.Tuple[int, int], plaintext: str) -> tp.List[int]:
@@ -77,4 +54,5 @@ def encrypt(pk: tp.Tuple[int, int], plaintext: str) -> tp.List[int]:
 def decrypt(pk: tp.Tuple[int, int], ciphertext: tp.List[int]) -> str:
     key, n = pk
     return "".join(chr((char ** key) % n) for char in ciphertext)
+
 
