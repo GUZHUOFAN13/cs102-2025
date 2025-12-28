@@ -1,4 +1,3 @@
-message = "Hello, World!"
 def text():
-    return message
+    return "Hello, World!"
 
