@@ -1,7 +1,6 @@
 def encrypt_caesar(plaintext: str, shift: int = 3) -> str:
     """
     Encrypts plaintext using a Caesar cipher.
-
     >>> encrypt_caesar("PYTHON")
     'SBWKRQ'
     >>> encrypt_caesar("python")
@@ -12,14 +11,17 @@ def encrypt_caesar(plaintext: str, shift: int = 3) -> str:
     ''
     """
     ciphertext = ""
-
-    for ch in plaintext:
-        if "a" <= ch <= "z":
-            ciphertext += chr((ord(ch) - ord("a") + shift) % 26 + ord("a"))
-        elif "A" <= ch <= "Z":
-            ciphertext += chr((ord(ch) - ord("A") + shift) % 26 + ord("A"))
-        else:
-            ciphertext += ch
+    for i in plaintext:
+        new_letter = ord(i) + shift
+        if ord("a") <= ord(i) <= ord("z"):
+            if new_letter > ord("z"):
+                new_letter = new_letter - 26
+            i = chr(new_letter)
+        if ord("A") <= ord(i) <= ord("Z"):
+            if new_letter > ord("Z"):
+                new_letter = new_letter - 26
+            i = chr(new_letter)
+        ciphertext = ciphertext + i
 
     return ciphertext
 
@@ -27,7 +29,6 @@ def encrypt_caesar(plaintext: str, shift: int = 3) -> str:
 def decrypt_caesar(ciphertext: str, shift: int = 3) -> str:
     """
     Decrypts a ciphertext using a Caesar cipher.
-
     >>> decrypt_caesar("SBWKRQ")
     'PYTHON'
     >>> decrypt_caesar("sbwkrq")
@@ -38,13 +39,16 @@ def decrypt_caesar(ciphertext: str, shift: int = 3) -> str:
     ''
     """
     plaintext = ""
-
-    for ch in ciphertext:
-        if "a" <= ch <= "z":
-            plaintext += chr((ord(ch) - ord("a") - shift) % 26 + ord("a"))
-        elif "A" <= ch <= "Z":
-            plaintext += chr((ord(ch) - ord("A") - shift) % 26 + ord("A"))
-        else:
-            plaintext += ch
+    for i in ciphertext:
+        new_letter = ord(i) - shift
+        if ord("a") <= ord(i) <= ord("z"):
+            if new_letter < ord("a"):
+                new_letter = new_letter + 26
+            i = chr(new_letter)
+        if ord("A") <= ord(i) <= ord("Z"):
+            if new_letter < ord("A"):
+                new_letter = new_letter + 26
+            i = chr(new_letter)
+        plaintext = plaintext + i
 
     return plaintext
