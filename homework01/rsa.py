@@ -65,7 +65,9 @@ def multiplicative_inverse(e: int, phi: int) -> int:
     return d
 
 
-def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[int, int]]:
+def generate_keypair(
+    p: int, q: int
+) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[int, int]]:
     if not (is_prime(p) and is_prime(q)):
         raise ValueError("Both numbers must be prime.")
     elif p == q:
@@ -86,10 +88,7 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
         e = random.randrange(1, phi)
         g = gcd(e, phi)
 
-
     d = multiplicative_inverse(e, phi)
-
-
 
     return ((e, n), (d, n))
 
@@ -97,7 +96,6 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
 def encrypt(pk: tp.Tuple[int, int], plaintext: str) -> tp.List[int]:
 
     key, n = pk
- 
 
     cipher = [(ord(char) ** key) % n for char in plaintext]
 
@@ -109,7 +107,7 @@ def decrypt(pk: tp.Tuple[int, int], ciphertext: tp.List[int]) -> str:
     key, n = pk
 
     plain = [chr((char**key) % n) for char in ciphertext]
- 
+
     return "".join(plain)
 
 
