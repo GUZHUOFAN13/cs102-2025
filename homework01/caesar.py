@@ -1,3 +1,6 @@
+ALPHABET_SIZE = 26
+
+
 def encrypt_caesar(plaintext: str, shift: int = 3) -> str:
     """
     Encrypts plaintext using a Caesar cipher.
@@ -11,18 +14,16 @@ def encrypt_caesar(plaintext: str, shift: int = 3) -> str:
     ''
     """
     ciphertext = ""
-    for i in plaintext:
-        new_letter = ord(i) + shift
-        if ord("a") <= ord(i) <= ord("z"):
-            if new_letter > ord("z"):
-                new_letter = new_letter - 26
-            i = chr(new_letter)
-        if ord("A") <= ord(i) <= ord("Z"):
-            if new_letter > ord("Z"):
-                new_letter = new_letter - 26
-            i = chr(new_letter)
-        ciphertext = ciphertext + i
-
+    for char in plaintext:
+        if char.isalpha():
+            if char.isupper():
+                base = ord("A")
+            else:
+                base = ord("a")
+            shifted_char = chr((ord(char) - base + shift) % ALPHABET_SIZE + base)
+            ciphertext += shifted_char
+        else:
+            ciphertext += char
     return ciphertext
 
 
@@ -39,17 +40,14 @@ def decrypt_caesar(ciphertext: str, shift: int = 3) -> str:
     ''
     """
     plaintext = ""
-    for i in ciphertext:
-        new_letter = ord(i) - shift
-        if ord("a") <= ord(i) <= ord("z"):
-            if new_letter < ord("a"):
-                new_letter = new_letter + 26
-            i = chr(new_letter)
-        if ord("A") <= ord(i) <= ord("Z"):
-            if new_letter < ord("A"):
-                new_letter = new_letter + 26
-            i = chr(new_letter)
-        plaintext = plaintext + i
-
+    for char in ciphertext:
+        if char.isalpha():
+            if char.isupper():
+                base = ord("A")
+            else:
+                base = ord("a")
+            shifted_char = chr((ord(char) - base - shift) % ALPHABET_SIZE + base)
+            plaintext += shifted_char
+        else:
+            plaintext += char
     return plaintext
-
