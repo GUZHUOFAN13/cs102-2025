@@ -81,8 +81,8 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
     # 使用扩展欧几里得算法生成私钥。
     d = multiplicative_inverse(e, phi)
 
-    # Return public and private keypair
-    # Public key is (e, n) and private key is (d, n)
+    # 返回公钥和私钥对
+    # 公钥为 (e, n)，私钥为 (d, n)。
     return ((e, n), (d, n))
 
 
