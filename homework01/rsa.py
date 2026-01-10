@@ -69,10 +69,10 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
     # phi = (p-1)(q-1)
     phi = (p - 1) * (q - 1)
 
-   # 选择一个整数 e，使得 e 和 phi(n) 互质。
+    # 选择一个整数 e，使得 e 和 phi(n) 互质。
     e = random.randrange(1, phi)
 
-   # 使用欧几里得算法验证 e 和 phi(n) 互质
+    # 使用欧几里得算法验证 e 和 phi(n) 互质
     g = gcd(e, phi)
     while g != 1:
         e = random.randrange(1, phi)
