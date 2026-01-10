@@ -69,16 +69,16 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
     # phi = (p-1)(q-1)
     phi = (p - 1) * (q - 1)
 
-    # Choose an integer e such that e and phi(n) are coprime
+   # 选择一个整数 e，使得 e 和 phi(n) 互质。
     e = random.randrange(1, phi)
 
-    # Use Euclid's Algorithm to verify that e and phi(n) are coprime
+   # 使用欧几里得算法验证 e 和 phi(n) 互质
     g = gcd(e, phi)
     while g != 1:
         e = random.randrange(1, phi)
         g = gcd(e, phi)
 
-    # Use Extended Euclid's Algorithm to generate the private key
+    # 使用扩展欧几里得算法生成私钥。
     d = multiplicative_inverse(e, phi)
 
     # Return public and private keypair
@@ -87,21 +87,21 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
 
 
 def encrypt(pk: tp.Tuple[int, int], plaintext: str) -> tp.List[int]:
-    # Unpack the key into it's components
+    # 将密钥分解成其组成部分。
     key, n = pk
-    # Convert each letter in the plaintext to numbers based on
-    # the character using a^b mod m
+    # 根据以下规则将明文中的每个字母转换为数字：
+    # 使用字符 a^b mod m
     cipher = [(ord(char) ** key) % n for char in plaintext]
-    # Return the array of bytes
+    # 返回字节数组
     return cipher
 
 
 def decrypt(pk: tp.Tuple[int, int], ciphertext: tp.List[int]) -> str:
-    # Unpack the key into its components
+    # 将密钥分解成各个组成部分。
     key, n = pk
-    # Generate the plaintext based on the ciphertext and key using a^b mod m
+    # 使用 a^b mod m 的公式，根据密文和密钥生成明文。
     plain = [chr((char**key) % n) for char in ciphertext]
-    # Return the array of bytes as a string
+    # 将字节数组作为字符串返回。
     return "".join(plain)
 
 
