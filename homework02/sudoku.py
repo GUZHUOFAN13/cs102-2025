@@ -24,13 +24,7 @@ def display(grid: tp.List[tp.List[str]]) -> None:
     width = 2
     line = "+".join(["-" * (width * 3)] * 3)
     for row in range(9):
-        print(
-    "".join(
-        grid[row][col].center(width)
-        + ("|" if str(col) in "25" else "")
-        for col in range(9)
-    )
-)
+        print("".join(grid[row][col].center(width) + ("|" if str(col) in "25" else "") for col in range(9)))
         if str(row) in "25":
             print(line)
     print()
@@ -104,9 +98,9 @@ def find_empty_positions(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.Tuple[in
     (2, 0)
     """
     for r in range(len(grid)):
-     for c in range(len(grid[r])):
-        if grid[r][c] == ".":
-            return (r, c)
+        for c in range(len(grid[r])):
+           if grid[r][c] == ".":
+               return (r, c)
     return None
 
 
