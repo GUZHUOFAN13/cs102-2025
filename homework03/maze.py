@@ -1,136 +1,137 @@
-from __future__ import annotations
-
 from copy import deepcopy
 from random import choice, randint
 from typing import List, Optional, Tuple, Union
 
-Cell = Union[str, int]
-Grid = List[List[Cell]]
-Coord = Tuple[int, int]
-
-WALL = "■"
-EMPTY = " "
-EXIT = "X"
+import pandas as pd
 
 
-def create_grid(rows: int = 15, cols: int = 15) -> Grid:
-    return [[WALL] * cols for _ in range(rows)]
+def create_grid(rows: int = 15, cols: int = 15) -> List[List[Union[str, int]]]:
+    return [["■"] * cols for _ in range(rows)]
 
 
-def remove_wall(grid: Grid, coord: Coord) -> Grid:
+def remove_wall(
+    grid: List[List[Union[str, int]]], coord: Tuple[int, int]
+) -> List[List[Union[str, int]]]:
+    """
+
+    :param grid:
+    :param coord:
+    :return:
+    """
     x, y = coord
     if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
-        grid[x][y] = EMPTY
+        grid[x][y] = " "
     return grid
 
 
-def _pick_exit(grid: Grid) -> Coord:
-    rows, cols = len(grid), len(grid[0])
-    candidates: List[Coord] = []
-    for j in range(cols):
-        if rows > 1 and grid[1][j] == EMPTY:
-            candidates.append((0, j))
-        if rows > 1 and grid[rows - 2][j] == EMPTY:
-            candidates.append((rows - 1, j))
-    for i in range(rows):
-        if cols > 1 and grid[i][1] == EMPTY:
-            candidates.append((i, 0))
-        if cols > 1 and grid[i][cols - 2] == EMPTY:
-            candidates.append((i, cols - 1))
+def bin_tree_maze(
+    rows: int = 15, cols: int = 15, random_exit: bool = True
+) -> List[List[Union[str, int]]]:
+    """
 
-    if not candidates:
-        side = randint(0, 3)
-        if side == 0:
-            return 0, randint(0, cols - 1)
-        if side == 1:
-            return rows - 1, randint(0, cols - 1)
-        if side == 2:
-            return randint(0, rows - 1), 0
-        return randint(0, rows - 1), cols - 1
-    return choice(candidates)
+    :param rows:
+    :param cols:
+    :param random_exit:
+    :return:
+    """
 
-
-def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
     grid = create_grid(rows, cols)
-    for x in range(1, rows, 2):
-        for y in range(1, cols, 2):
-            grid[x][y] = EMPTY
+    empty_cells = []
+    for x, row in enumerate(grid):
+        for y, _ in enumerate(row):
+            if x % 2 == 1 and y % 2 == 1:
+                grid[x][y] = " "
+                empty_cells.append((x, y))
 
-    for x in range(1, rows, 2):
-        for y in range(1, cols, 2):
-            candidates = []
-            if x > 1:
-                candidates.append((x - 1, y))
-            if y > 1:
-                candidates.append((x, y - 1))
-            if candidates:
-                target = choice(candidates)
-                grid[target[0]][target[1]] = EMPTY
+    for i in range(len(empty_cells)):
+        x, y = empty_cells[i]
+        possible = []
+        if x > 1:
+            possible.append("up")
+        if y < cols - 2:
+            possible.append("right")
+
+        if len(possible) > 0:
+            move = choice(possible)
+            if move == "up":
+                grid[x - 1][y] = " "
+            else:
+                grid[x][y + 1] = " "
 
     if random_exit:
-        start, end = _pick_exit(grid), _pick_exit(grid)
-        tries = 0
-        while end == start and tries < 50:
-            end = _pick_exit(grid)
-            tries += 1
+        x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
+        y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
+        y_out = randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
     else:
-        start, end = (0, cols - 2), (rows - 1, 1)
+        x_in, y_in = 0, cols - 2
+        x_out, y_out = rows - 1, 1
 
-    grid[start[0]][start[1]] = EXIT
-    grid[end[0]][end[1]] = EXIT
+    grid[x_in][y_in], grid[x_out][y_out] = "X", "X"
+
     return grid
 
 
-def get_exits(grid: Grid) -> List[Coord]:
-    exits = []
-    for i in range(len(grid)):
-        for j in range(len(grid[0])):
-            if grid[i][j] == EXIT:
-                exits.append((i, j))
-    return exits
+def get_exits(grid: List[List[Union[str, int]]]) -> List[Tuple[int, int]]:
+    """
+
+    :param grid:
+    :return:
+    """
+    result = []
+    for r in range(len(grid)):
+        for c in range(len(grid[0])):
+            if grid[r][c] == "X":
+                result.append((r, c))
+    return result
 
 
-def make_step(grid: Grid, k: int) -> Grid:
-    rows, cols = len(grid), len(grid[0])
-    new_grid = deepcopy(grid)
-    for i in range(rows):
-        for j in range(cols):
-            cell = grid[i][j]
-            # 修复 mypy: 显式检查是否为 int 再比较
-            if isinstance(cell, int) and cell == k:
-                for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    ni, nj = i + di, j + dj
-                    if 0 <= ni < rows and 0 <= nj < cols:
-                        if new_grid[ni][nj] == EMPTY or new_grid[ni][nj] == EXIT:
-                            new_grid[ni][nj] = k + 1
-    return new_grid
+def make_step(grid: List[List[Union[str, int]]], k: int) -> List[List[Union[str, int]]]:
+    """
+
+    :param grid:
+    :param k:
+    :return:
+    """
+    rows = len(grid)
+    cols = len(grid[0])
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == k:
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < rows and 0 <= nc < cols:
+                        if grid[nr][nc] == " " or grid[nr][nc] == "X":
+                            grid[nr][nc] = k + 1
+    return grid
 
 
-def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
-    rows, cols = len(grid), len(grid[0])
-    ex, ey = exit_coord
-    exit_val = grid[ex][ey]
+def shortest_path(
+    grid: List[List[Union[str, int]]], exit_coord: Tuple[int, int]
+) -> Optional[List[Tuple[int, int]]]:
+    """
 
-    # 修复 mypy: 确保出口处是已经标记过的数字
-    if not isinstance(exit_val, int):
+    :param grid:
+    :param exit_coord:
+    :return:
+    """
+    r, c = exit_coord
+    if not isinstance(grid[r][c], int):
         return None
 
     path = [exit_coord]
-    curr_val: int = exit_val
-    curr_pos = exit_coord
+    curr_r, curr_c = r, c
+    curr_val = grid[r][c]
 
-    while curr_val > 0:
+    while curr_val > 1:
         found = False
-        i, j = curr_pos
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < rows and 0 <= nj < cols:
-                neighbor_val = grid[ni][nj]
-                # 修复 mypy: 确保邻居是 int 再做减法比较
-                if isinstance(neighbor_val, int) and neighbor_val == curr_val - 1:
-                    curr_pos = (ni, nj)
-                    curr_val = neighbor_val
-                    path.append(curr_pos)
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = curr_r + dr, curr_c + dc
+            if 0 <= nr < len(grid) and 0 <= nc < len(grid[0]):
+                val = grid[nr][nc]
+                if isinstance(val, int) and val == curr_val - 1:
+                    curr_r, curr_c = nr, nc
+                    curr_val = val
+                    path.append((nr, nc))
                     found = True
                     break
         if not found:
@@ -140,41 +141,70 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     return path
 
 
-def encircled_exit(grid: Grid, coord: Coord) -> bool:
-    x, y = coord
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nx, ny = x + di, y + dj
-        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
-            if grid[nx][ny] != WALL:
+def encircled_exit(grid: List[List[Union[str, int]]], coord: Tuple[int, int]) -> bool:
+    """
+
+    :param grid:
+    :param coord:
+    :return:
+    """
+    r, c = coord
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < len(grid) and 0 <= nc < len(grid[0]):
+            if grid[nr][nc] != "■":
                 return False
     return True
 
 
-def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
-    work = deepcopy(grid)
-    exits = get_exits(work)
+def solve_maze(
+    grid: List[List[Union[str, int]]],
+) -> Tuple[List[List[Union[str, int]]], Optional[List[Tuple[int, int]]]]:
+    """
+
+    :param grid:
+    :return:
+    """
+    exits = get_exits(grid)
     if len(exits) < 2:
-        return work, None
+        return grid, None
 
-    start_node, end_node = exits[0], exits[1]
-    work[start_node[0]][start_node[1]] = 0
+    work_grid = deepcopy(grid)
+    start_pos = exits[0]
+    end_pos = exits[1]
 
-    for k in range(len(work) * len(work[0])):
-        new_work = make_step(work, k)
-        if new_work == work:
-            break
-        work = new_work
-        if isinstance(work[end_node[0]][end_node[1]], int):
-            return work, shortest_path(work, end_node)
+    work_grid[start_pos[0]][start_pos[1]] = 1
 
-    return work, None
+    max_steps = len(grid) * len(grid[0])
+    for k in range(1, max_steps):
+        work_grid = make_step(work_grid, k)
+        if isinstance(work_grid[end_pos[0]][end_pos[1]], int):
+            path = shortest_path(work_grid, end_pos)
+            return work_grid, path
+
+    return work_grid, None
 
 
-def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
-    if not path:
-        return grid
-    for i, j in path:
-        cell = grid[i][j]
-        if cell == EMPTY or isinstance(cell, int):
-            grid[i][j] = EXIT
+def add_path_to_grid(
+    grid: List[List[Union[str, int]]], path: Optional[List[Tuple[int, int]]]
+) -> List[List[Union[str, int]]]:
+    """
+
+    :param grid:
+    :param path:
+    :return:
+    """
+
+    if path:
+        for r, c in path:
+            grid[r][c] = "X"
     return grid
+
+
+if __name__ == "__main__":
+    print(pd.DataFrame(bin_tree_maze(15, 15)))
+    GRID = bin_tree_maze(15, 15)
+    print(pd.DataFrame(GRID))
+    _, PATH = solve_maze(GRID)
+    MAZE = add_path_to_grid(GRID, PATH)
+    print(pd.DataFrame(MAZE))
