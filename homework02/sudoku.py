@@ -24,7 +24,12 @@ def display(grid: tp.List[tp.List[str]]) -> None:
     width = 2
     line = "+".join(["-" * (width * 3)] * 3)
     for row in range(9):
-        print("".join(grid[row][col].center(width) + ("|" if str(col) in "25" else "") for col in range(9)))
+        print(
+            "".join(
+                grid[row][col].center(width) + ("|" if str(col) in "25" else "")
+                for col in range(9)
+            )
+        )
         if str(row) in "25":
             print(line)
     print()
@@ -41,7 +46,6 @@ def group(values: tp.List[T], n: int) -> tp.List[tp.List[T]]:
     return [values[i : i + n] for i in range(0, len(values), n)]
 
 
-
 def get_row(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
     """Возвращает все значения для номера строки, указанной в pos
     >>> get_row([['1', '2', '.'], ['4', '5', '6'], ['7', '8', '9']], (0, 0))
@@ -53,8 +57,6 @@ def get_row(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str
     """
     r, _ = pos
     return list(grid[r])
-
-
 
 
 def get_col(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
@@ -106,7 +108,9 @@ def find_empty_positions(grid: tp.List[tp.List[str]]) -> tp.Optional[tp.Tuple[in
     return None
 
 
-def find_possible_values(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.Set[str]:
+def find_possible_values(
+    grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]
+) -> tp.Set[str]:
     """Вернуть множество возможных значения для указанной позиции
     >>> grid = read_sudoku('puzzle1.txt')
     >>> values = find_possible_values(grid, (0,2))
@@ -240,11 +244,10 @@ def generate_sudoku(N: int) -> tp.List[tp.List[str]]:
     random.shuffle(cells)
     keep = set(cells[:N])
 
-    puzzle = [["." for _ in range(9)] for _ in range(9)]
-    for r in range(9):
-        for c in range(9):
-            if (r, c) in keep:
-                puzzle[r][c] = full[r][c]
+    puzzle = [
+        [full[r][c] if (r, c) in keep else "." for c in range(9)]
+        for r in range(9)
+    ]
 
     return puzzle
 
