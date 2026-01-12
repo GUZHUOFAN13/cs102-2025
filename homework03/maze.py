@@ -96,7 +96,7 @@ def make_step(grid: Grid, k: int) -> Grid:
     for i in range(rows):
         for j in range(cols):
             cell = grid[i][j]
-            # 使用 isinstance 修复 mypy 的类型检查错误
+            # 修复 mypy: 显式检查是否为 int 再比较
             if isinstance(cell, int) and cell == k:
                 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     ni, nj = i + di, j + dj
@@ -109,26 +109,27 @@ def make_step(grid: Grid, k: int) -> Grid:
 def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     rows, cols = len(grid), len(grid[0])
     ex, ey = exit_coord
+    exit_val = grid[ex][ey]
 
-    # 检查出口是否被波纹扫到
-    if not isinstance(grid[ex][ey], int):
+    # 修复 mypy: 确保出口处是已经标记过的数字
+    if not isinstance(exit_val, int):
         return None
 
     path = [exit_coord]
-    curr_val = grid[ex][ey]
+    curr_val: int = exit_val
     curr_pos = exit_coord
 
-    while isinstance(curr_val, int) and curr_val > 0:
+    while curr_val > 0:
         found = False
         i, j = curr_pos
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
             if 0 <= ni < rows and 0 <= nj < cols:
-                val = grid[ni][nj]
-                # 再次使用 isinstance 确保 val 是 int 以便进行减法运算
-                if isinstance(val, int) and val == curr_val - 1:
+                neighbor_val = grid[ni][nj]
+                # 修复 mypy: 确保邻居是 int 再做减法比较
+                if isinstance(neighbor_val, int) and neighbor_val == curr_val - 1:
                     curr_pos = (ni, nj)
-                    curr_val = val
+                    curr_val = neighbor_val
                     path.append(curr_pos)
                     found = True
                     break
@@ -173,6 +174,7 @@ def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
     if not path:
         return grid
     for i, j in path:
-        if grid[i][j] == EMPTY or isinstance(grid[i][j], int):
+        cell = grid[i][j]
+        if cell == EMPTY or isinstance(cell, int):
             grid[i][j] = EXIT
     return grid
