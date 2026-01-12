@@ -133,9 +133,7 @@ def make_step(grid: Grid, k: int) -> Grid:
     return new_grid
 
 
-def shortest_path(
-    grid: List[List[Union[str, int]]], exit_coord: Tuple[int, int]
-) -> Optional[Union[Tuple[int, int], List[Tuple[int, int]]]]:
+def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     rows, cols = len(grid), len(grid[0])
 
     start_pos: Optional[Tuple[int, int]] = None
@@ -168,7 +166,7 @@ def shortest_path(
     if curr is None:
         return None
 
-    path: List[Tuple[int, int]] = [exit_coord, curr]
+    path: List[Coord] = [exit_coord, curr]
 
     while curr != start_pos:
         i, j = curr
@@ -232,7 +230,11 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
         reached = False
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
+            if (
+                0 <= ni < len(work)
+                and 0 <= nj < len(work[0])
+                and isinstance(work[ni][nj], int)
+            ):
                 reached = True
                 break
 
