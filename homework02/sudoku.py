@@ -24,8 +24,8 @@ def display(grid: tp.List[tp.List[str]]) -> None:
     width = 2
     line = "+".join(["-" * (width * 3)] * 3)
     for row in range(9):
-      print("".join(grid[row][col].center(width) + ("|" if str(col) in "25" else "") for col in range(9)))
-      if str(row) in "25":
+        print("".join(grid[row][col].center(width) + ("|" if str(col) in "25" else "") for col in range(9)))
+        if str(row) in "25":
             print(line)
     print()
 
@@ -39,6 +39,7 @@ def group(values: tp.List[T], n: int) -> tp.List[tp.List[T]]:
     [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     """
     return [values[i : i + n] for i in range(0, len(values), n)]
+
 
 
 def get_row(grid: tp.List[tp.List[str]], pos: tp.Tuple[int, int]) -> tp.List[str]:
