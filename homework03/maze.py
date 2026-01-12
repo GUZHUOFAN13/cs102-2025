@@ -229,11 +229,7 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
         reached = False
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if (
-                0 <= ni < len(work)
-                and 0 <= nj < len(work[0])
-                and isinstance(work[ni][nj], int)
-            ):
+            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
                 reached = True
                 break
 
