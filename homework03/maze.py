@@ -35,7 +35,7 @@ def bin_tree_maze(
             candidates.append((x - 1, y))
         if y + 2 < cols:
             candidates.append((x, y + 1))
-        
+
         if candidates:
             wall_coord = choice(candidates)
             remove_wall(grid, wall_coord)
@@ -85,6 +85,9 @@ def shortest_path(
             if grid[i][j] == 0:
                 start_pos = (i, j)
                 break
+        if start_pos:
+            break
+
     if not start_pos:
         return None
 
@@ -95,7 +98,7 @@ def shortest_path(
         if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
             curr = (ni, nj)
             break
-    
+
     if not curr:
         return None
 
@@ -113,7 +116,7 @@ def shortest_path(
                 break
         if not found_next:
             return None
-            
+
     path.reverse()
     return path
 
@@ -153,7 +156,7 @@ def solve_maze(
             if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
                 reached = True
                 break
-        
+
         if reached:
             path = shortest_path(work, end_node)
             return work, path
