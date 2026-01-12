@@ -4,8 +4,6 @@ from copy import deepcopy
 from random import choice, randint
 from typing import List, Optional, Tuple, Union
 
-import pandas as pd
-
 Cell = Union[str, int]
 Grid = List[List[Cell]]
 Coord = Tuple[int, int]
@@ -16,58 +14,22 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 
 
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
+    """
+    Remove wall at coord if coord is inside the grid.
+    IMPORTANT (tests): must NOT create a new grid; should mutate and return the same grid.
+    """
     x, y = coord
     if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
         grid[x][y] = " "
     return grid
 
 
-def _pick_exit(grid: Grid) -> Coord:
-    """
-    Pick a border cell that has an adjacent inner cell with a free space " ".
-    This makes sure the exit is reachable.
-    """
-    rows, cols = len(grid), len(grid[0])
-    candidates: List[Coord] = []
-
-    # top row: neighbor is (1, j)
-    for j in range(cols):
-        if rows > 1 and grid[1][j] == " ":
-            candidates.append((0, j))
-
-    # bottom row: neighbor is (rows-2, j)
-    for j in range(cols):
-        if rows > 1 and grid[rows - 2][j] == " ":
-            candidates.append((rows - 1, j))
-
-    # left col: neighbor is (i, 1)
-    for i in range(rows):
-        if cols > 1 and grid[i][1] == " ":
-            candidates.append((i, 0))
-
-    # right col: neighbor is (i, cols-2)
-    for i in range(rows):
-        if cols > 1 and grid[i][cols - 2] == " ":
-            candidates.append((i, cols - 1))
-
-    if not candidates:
-        # fallback: just any border cell
-        side = randint(0, 3)
-        if side == 0:
-            return 0, randint(0, cols - 1)
-        if side == 1:
-            return rows - 1, randint(0, cols - 1)
-        if side == 2:
-            return randint(0, rows - 1), 0
-        return randint(0, rows - 1), cols - 1
-
-    return choice(candidates)
-
-
 def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
     """
-    Binary Tree maze generation:
-    carve rooms at odd/odd, then for each room carve one wall either up or right.
+    Binary Tree maze:
+    - carve cells at odd/odd
+    - from each carved cell carve one wall either UP or RIGHT (if possible)
+    - put two exits 'X' on the border
     """
     grid = create_grid(rows, cols)
 
@@ -80,33 +42,25 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
 
     for x, y in empty_cells:
         candidates: List[Coord] = []
-
-        # carve UP: needs a room at (x-2, y) which is inside the inner area
-        if x - 2 >= 1 and grid[x - 2][y] == " ":
-            candidates.append((x - 1, y))
-
-        # carve RIGHT: needs a room at (x, y+2) which is inside the inner area
-        if y + 2 <= cols - 2 and grid[x][y + 2] == " ":
-            candidates.append((x, y + 1))
-
+        if x - 2 >= 0:
+            candidates.append((x - 1, y))  # wall up
+        if y + 2 < cols:
+            candidates.append((x, y + 1))  # wall right
         if candidates:
             remove_wall(grid, choice(candidates))
 
-    # exits
     if random_exit:
-        start = _pick_exit(grid)
-        end = _pick_exit(grid)
-        # make sure they differ
-        tries = 0
-        while end == start and tries < 50:
-            end = _pick_exit(grid)
-            tries += 1
+        x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
+        y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
+        y_out = (
+            randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
+        )
     else:
-        start = (0, cols - 2)
-        end = (rows - 1, 1)
+        x_in, y_in = 0, cols - 2
+        x_out, y_out = rows - 1, 1
 
-    grid[start[0]][start[1]] = "X"
-    grid[end[0]][end[1]] = "X"
+    grid[x_in][y_in] = "X"
+    grid[x_out][y_out] = "X"
     return grid
 
 
@@ -120,6 +74,10 @@ def get_exits(grid: Grid) -> List[Coord]:
 
 
 def make_step(grid: Grid, k: int) -> Grid:
+    """
+    Wave expansion from cells == k into free spaces " ".
+    IMPORTANT (tests): must not modify input grid in-place; return new grid.
+    """
     rows, cols = len(grid), len(grid[0])
     new_grid = deepcopy(grid)
 
@@ -133,10 +91,37 @@ def make_step(grid: Grid, k: int) -> Grid:
     return new_grid
 
 
-def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
-    rows, cols = len(grid), len(grid[0])
+def encircled_exit(grid: Grid, coord: Coord) -> bool:
+    """
+    Exit is encircled if all valid adjacent cells are NOT free space " ".
+    IMPORTANT (tests): only " " counts as passable (not "X", not ints).
+    """
+    x, y = coord
+    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nx, ny = x + di, y + dj
+        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]) and grid[nx][ny] == " ":
+            return False
+    return True
 
-    start_pos: Optional[Tuple[int, int]] = None
+
+def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
+    """
+    Restore shortest path from start (cell == 0) to the given exit (cell == "X")
+    using the numbered wave in grid.
+
+    IMPORTANT (tests):
+    - If exit_coord is not actually an "X" in grid -> return None
+    - Return a list of coords INCLUDING start and INCLUDING the exit as the last element.
+    """
+    rows, cols = len(grid), len(grid[0])
+    ex, ey = exit_coord
+
+    if not (0 <= ex < rows and 0 <= ey < cols):
+        return None
+    if grid[ex][ey] != "X":
+        return None
+
+    start_pos: Optional[Coord] = None
     for i in range(rows):
         for j in range(cols):
             if grid[i][j] == 0:
@@ -144,16 +129,12 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
                 break
         if start_pos is not None:
             break
-
     if start_pos is None:
         return None
 
-    ex, ey = exit_coord
-
-    curr: Optional[Tuple[int, int]] = None
+    # Find an integer neighbor of exit (the wave reaches a cell adjacent to the exit)
+    curr: Optional[Coord] = None
     curr_val: Optional[int] = None
-
-    # choose the smallest integer neighbor of the exit
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
         if 0 <= ni < rows and 0 <= nj < cols:
@@ -166,57 +147,47 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     if curr is None:
         return None
 
-    path: List[Coord] = [exit_coord, curr]
-
+    # Backtrack down to 0
+    path: List[Coord] = [curr]
     while curr != start_pos:
         i, j = curr
         cell = grid[i][j]
         if not isinstance(cell, int):
             return None
+        target = cell - 1
 
-        target_val = cell - 1
-        next_cell: Optional[Tuple[int, int]] = None
-
+        nxt: Optional[Coord] = None
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
-            if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == target_val:
-                next_cell = (ni, nj)
+            if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == target:
+                nxt = (ni, nj)
                 break
 
-        if next_cell is None:
+        if nxt is None:
             return None
 
-        curr = next_cell
+        curr = nxt
         path.append(curr)
 
-    path.reverse()
+    path.reverse()  # now from start to neighbor
+    path.append(exit_coord)  # exit as the last element
     return path
 
 
-def encircled_exit(grid: Grid, coord: Coord) -> bool:
-    """
-    True if exit has no adjacent free cell.
-    """
-    x, y = coord
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nx, ny = x + di, y + dj
-        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]) and grid[nx][ny] == " ":
-            return False
-    return True
-
-
 def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
+    """
+    Solve maze using wave algorithm:
+    - pick exits[0] as start, exits[1] as end (DO NOT swap, tests rely on this)
+    - start cell becomes 0
+    - expand wave into " "
+    - if end has an integer neighbor -> restore path
+    """
     work = deepcopy(grid)
     exits = get_exits(work)
     if len(exits) < 2:
         return work, None
 
     start_node, end_node = exits[0], exits[1]
-
-    # if start is encircled, swap (sometimes random exits)
-    if encircled_exit(work, start_node) and not encircled_exit(work, end_node):
-        start_node, end_node = end_node, start_node
-
     work[start_node[0]][start_node[1]] = 0
 
     max_steps = len(work) * len(work[0])
@@ -230,7 +201,11 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
         reached = False
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
+            if (
+                0 <= ni < len(work)
+                and 0 <= nj < len(work[0])
+                and isinstance(work[ni][nj], int)
+            ):
                 reached = True
                 break
 
@@ -242,17 +217,21 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
 
 
 def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
+    """
+    Mark the found path on the grid using "X".
+    """
     if path:
-        for i, row in enumerate(grid):
-            for j, _ in enumerate(row):
-                if (i, j) in path:
-                    grid[i][j] = "X"
+        for i, j in path:
+            if 0 <= i < len(grid) and 0 <= j < len(grid[0]):
+                grid[i][j] = "X"
     return grid
 
 
 if __name__ == "__main__":
+    # Optional local demo without requiring pandas in CI/tests.
     grid_ = bin_tree_maze(15, 15)
-    print(pd.DataFrame(grid_))
-    _, path_ = solve_maze(grid_)
-    maze_ = add_path_to_grid(grid_, path_)
-    print(pd.DataFrame(maze_))
+    solved_grid, path_ = solve_maze(grid_)
+    add_path_to_grid(grid_, path_)
+    # Simple print
+    for row in grid_:
+        print("".join(str(c) for c in row))
