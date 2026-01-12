@@ -31,9 +31,7 @@ def display(grid: tp.List[tp.List[str]]) -> None:
 
 
 def group(values: tp.List[T], n: int) -> tp.List[tp.List[T]]:
-    """
-    Сгруппировать значения values в список, состоящий из списков по n элементов
-    """
+    """Сгруппировать значения values в список, состоящий из списков по n элементов"""
     return [values[i : i + n] for i in range(0, len(values), n)]
 
 
