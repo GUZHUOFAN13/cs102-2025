@@ -52,12 +52,10 @@ def _pick_exit(grid: Grid) -> Coord:
 
 def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
     grid = create_grid(rows, cols)
-    # 1. 填充房间
     for x in range(1, rows, 2):
         for y in range(1, cols, 2):
             grid[x][y] = EMPTY
 
-    # 2. 二项树逻辑：每个房间随机选择向上或向左打通（只要不越界）
     for x in range(1, rows, 2):
         for y in range(1, cols, 2):
             candidates = []
@@ -97,12 +95,13 @@ def make_step(grid: Grid, k: int) -> Grid:
     new_grid = deepcopy(grid)
     for i in range(rows):
         for j in range(cols):
-            if grid[i][j] == k:
+            cell = grid[i][j]
+            # 使用 isinstance 修复 mypy 的类型检查错误
+            if isinstance(cell, int) and cell == k:
                 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     ni, nj = i + di, j + dj
                     if 0 <= ni < rows and 0 <= nj < cols:
-                        # 核心修正：波纹必须能覆盖 EMPTY 和 EXIT ('X')
-                        if new_grid[ni][nj] in [EMPTY, EXIT]:
+                        if new_grid[ni][nj] == EMPTY or new_grid[ni][nj] == EXIT:
                             new_grid[ni][nj] = k + 1
     return new_grid
 
@@ -111,7 +110,7 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     rows, cols = len(grid), len(grid[0])
     ex, ey = exit_coord
 
-    # 如果出口处不是数字，说明没搜到
+    # 检查出口是否被波纹扫到
     if not isinstance(grid[ex][ey], int):
         return None
 
@@ -119,22 +118,22 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     curr_val = grid[ex][ey]
     curr_pos = exit_coord
 
-    # 从终点回溯到起点 (0)
-    while curr_val > 0:
+    while isinstance(curr_val, int) and curr_val > 0:
         found = False
         i, j = curr_pos
-        # 固定方向顺序 [上, 下, 左, 右] 以匹配测试期望
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
             if 0 <= ni < rows and 0 <= nj < cols:
-                if grid[ni][nj] == curr_val - 1:
+                val = grid[ni][nj]
+                # 再次使用 isinstance 确保 val 是 int 以便进行减法运算
+                if isinstance(val, int) and val == curr_val - 1:
                     curr_pos = (ni, nj)
-                    curr_val -= 1
+                    curr_val = val
                     path.append(curr_pos)
                     found = True
                     break
         if not found:
-            return None
+            break
 
     path.reverse()
     return path
@@ -145,7 +144,6 @@ def encircled_exit(grid: Grid, coord: Coord) -> bool:
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         nx, ny = x + di, y + dj
         if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
-            # 只要有一个邻居不是墙，就没被围死
             if grid[nx][ny] != WALL:
                 return False
     return True
@@ -157,17 +155,14 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
     if len(exits) < 2:
         return work, None
 
-    # 指定第一个出口为起点 0
     start_node, end_node = exits[0], exits[1]
     work[start_node[0]][start_node[1]] = 0
 
-    # 迭代步数
     for k in range(len(work) * len(work[0])):
         new_work = make_step(work, k)
         if new_work == work:
             break
         work = new_work
-        # 只要终点位置变成了数字，就说明找到了路径
         if isinstance(work[end_node[0]][end_node[1]], int):
             return work, shortest_path(work, end_node)
 
