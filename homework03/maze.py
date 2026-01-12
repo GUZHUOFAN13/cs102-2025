@@ -8,57 +8,83 @@ Cell = Union[str, int]
 Grid = List[List[Cell]]
 Coord = Tuple[int, int]
 
+WALL = "■"
+EMPTY = " "
+EXIT = "X"
+
 
 def create_grid(rows: int = 15, cols: int = 15) -> Grid:
-    return [["■"] * cols for _ in range(rows)]
+    return [[WALL] * cols for _ in range(rows)]
 
 
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
-    """
-    Remove wall at coord if coord is inside the grid.
-    IMPORTANT (tests): must NOT create a new grid; should mutate and return the same grid.
-    """
     x, y = coord
     if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
-        grid[x][y] = " "
+        grid[x][y] = EMPTY
     return grid
 
 
+def _pick_exit(grid: Grid) -> Coord:
+    rows, cols = len(grid), len(grid[0])
+    candidates: List[Coord] = []
+
+    for j in range(cols):
+        if rows > 1 and grid[1][j] == EMPTY:
+            candidates.append((0, j))
+        if rows > 1 and grid[rows - 2][j] == EMPTY:
+            candidates.append((rows - 1, j))
+
+    for i in range(rows):
+        if cols > 1 and grid[i][1] == EMPTY:
+            candidates.append((i, 0))
+        if cols > 1 and grid[i][cols - 2] == EMPTY:
+            candidates.append((i, cols - 1))
+
+    if not candidates:
+        side = randint(0, 3)
+        if side == 0:
+            return 0, randint(0, cols - 1)
+        if side == 1:
+            return rows - 1, randint(0, cols - 1)
+        if side == 2:
+            return randint(0, rows - 1), 0
+        return randint(0, rows - 1), cols - 1
+
+    return choice(candidates)
+
+
 def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
-    """
-    Binary Tree maze:
-    - carve cells at odd/odd
-    - from each carved cell carve one wall either UP or RIGHT (if possible)
-    - put two exits 'X' on the border
-    """
     grid = create_grid(rows, cols)
 
-    empty_cells: List[Coord] = []
+    rooms: List[Coord] = []
     for x in range(rows):
         for y in range(cols):
             if x % 2 == 1 and y % 2 == 1:
-                grid[x][y] = " "
-                empty_cells.append((x, y))
+                grid[x][y] = EMPTY
+                rooms.append((x, y))
 
-    for x, y in empty_cells:
+    for x, y in rooms:
         candidates: List[Coord] = []
-        if x - 2 >= 0:
-            candidates.append((x - 1, y))  # wall up
-        if y + 2 < cols:
-            candidates.append((x, y + 1))  # wall right
+        if x - 2 >= 1 and grid[x - 2][y] == EMPTY:
+            candidates.append((x - 1, y))
+        if y + 2 <= cols - 2 and grid[x][y + 2] == EMPTY:
+            candidates.append((x, y + 1))
         if candidates:
             remove_wall(grid, choice(candidates))
 
     if random_exit:
-        x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
-        y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
-        y_out = randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
+        start = _pick_exit(grid)
+        end = _pick_exit(grid)
+        tries = 0
+        while end == start and tries < 50:
+            end = _pick_exit(grid)
+            tries += 1
     else:
-        x_in, y_in = 0, cols - 2
-        x_out, y_out = rows - 1, 1
+        start = (0, cols - 2)
+        end = (rows - 1, 1)
 
-    grid[x_in][y_in] = "X"
-    grid[x_out][y_out] = "X"
+    grid[start[0]][start[1]] = EXIT
+    grid[end[0]][end[1]] = EXIT
     return grid
 
 
@@ -66,58 +92,28 @@ def get_exits(grid: Grid) -> List[Coord]:
     exits: List[Coord] = []
     for i in range(len(grid)):
         for j in range(len(grid[0])):
-            if grid[i][j] == "X":
+            if grid[i][j] == EXIT:
                 exits.append((i, j))
     return exits
 
 
 def make_step(grid: Grid, k: int) -> Grid:
-    """
-    Wave expansion from cells == k into free spaces " ".
-    IMPORTANT (tests): must not modify input grid in-place; return new grid.
-    """
     rows, cols = len(grid), len(grid[0])
     new_grid = deepcopy(grid)
 
     for i in range(rows):
         for j in range(cols):
             if grid[i][j] == k:
-                for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
                     ni, nj = i + di, j + dj
-                    if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == " ":
+                    if 0 <= ni < rows and 0 <= nj < cols and new_grid[ni][nj] == EMPTY:
                         new_grid[ni][nj] = k + 1
+
     return new_grid
 
 
-def encircled_exit(grid: Grid, coord: Coord) -> bool:
-    """
-    Exit is encircled if all valid adjacent cells are NOT free space " ".
-    IMPORTANT (tests): only " " counts as passable (not "X", not ints).
-    """
-    x, y = coord
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nx, ny = x + di, y + dj
-        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]) and grid[nx][ny] == " ":
-            return False
-    return True
-
-
 def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
-    """
-    Restore shortest path from start (cell == 0) to the given exit (cell == "X")
-    using the numbered wave in grid.
-
-    IMPORTANT (tests):
-    - If exit_coord is not actually an "X" in grid -> return None
-    - Return a list of coords INCLUDING start and INCLUDING the exit as the last element.
-    """
     rows, cols = len(grid), len(grid[0])
-    ex, ey = exit_coord
-
-    if not (0 <= ex < rows and 0 <= ey < cols):
-        return None
-    if grid[ex][ey] != "X":
-        return None
 
     start_pos: Optional[Coord] = None
     for i in range(rows):
@@ -130,32 +126,41 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     if start_pos is None:
         return None
 
-    # Find an integer neighbor of exit (the wave reaches a cell adjacent to the exit)
-    curr: Optional[Coord] = None
-    curr_val: Optional[int] = None
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        ni, nj = ex + di, ey + dj
-        if 0 <= ni < rows and 0 <= nj < cols:
-            v = grid[ni][nj]
-            if isinstance(v, int):
-                if curr_val is None or v < curr_val:
-                    curr_val = v
-                    curr = (ni, nj)
+    ex, ey = exit_coord
 
-    if curr is None:
-        return None
+    # 情况1：出口格本身已经是数字（有人会把出口也标号）
+    if isinstance(grid[ex][ey], int):
+        curr = (ex, ey)
+        path: List[Coord] = [curr]
+    else:
+        # 情况2：出口格是 "X"，从它的邻居里找最小的数字作为回溯起点
+        best: Optional[Coord] = None
+        best_val: Optional[int] = None
 
-    # Backtrack down to 0
-    path: List[Coord] = [curr]
+        for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
+            ni, nj = ex + di, ey + dj
+            if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
+                v = grid[ni][nj]
+                if best_val is None or v < best_val:
+                    best_val = v
+                    best = (ni, nj)
+
+        if best is None:
+            return None
+
+        curr = best
+        path = [exit_coord, curr]
+
+    # 回溯：每次找 value-1 的邻居（固定方向顺序保证测试一致）
     while curr != start_pos:
         i, j = curr
         cell = grid[i][j]
         if not isinstance(cell, int):
             return None
-        target = cell - 1
 
+        target = cell - 1
         nxt: Optional[Coord] = None
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             ni, nj = i + di, j + dj
             if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == target:
                 nxt = (ni, nj)
@@ -167,25 +172,30 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
         curr = nxt
         path.append(curr)
 
-    path.reverse()  # now from start to neighbor
-    path.append(exit_coord)  # exit as the last element
+    path.reverse()
     return path
 
 
+def encircled_exit(grid: Grid, coord: Coord) -> bool:
+    x, y = coord
+    for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
+        nx, ny = x + di, y + dj
+        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
+            # 只要旁边不是墙，就说明没被围住（空格/数字/出口都算通）
+            if grid[nx][ny] != WALL:
+                return False
+    return True
+
+
 def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
-    """
-    Solve maze using wave algorithm:
-    - pick exits[0] as start, exits[1] as end (DO NOT swap, tests rely on this)
-    - start cell becomes 0
-    - expand wave into " "
-    - if end has an integer neighbor -> restore path
-    """
     work = deepcopy(grid)
     exits = get_exits(work)
     if len(exits) < 2:
         return work, None
 
     start_node, end_node = exits[0], exits[1]
+
+    # 起点出口标 0
     work[start_node[0]][start_node[1]] = 0
 
     max_steps = len(work) * len(work[0])
@@ -195,9 +205,10 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
             break
         work = new_work
 
+        # 到达判定：end_node 周围出现数字（表示波前到达出口旁）
         ex, ey = end_node
         reached = False
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             ni, nj = ex + di, ey + dj
             if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
                 reached = True
@@ -211,21 +222,10 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
 
 
 def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
-    """
-    Mark the found path on the grid using "X".
-    """
-    if path:
-        for i, j in path:
-            if 0 <= i < len(grid) and 0 <= j < len(grid[0]):
-                grid[i][j] = "X"
+    if not path:
+        return grid
+    # 不覆盖墙/出口，只把路径内部标出来（如果你作业要求别的符号，可改这里）
+    for i, j in path:
+        if grid[i][j] == EMPTY:
+            grid[i][j] = EXIT
     return grid
-
-
-if __name__ == "__main__":
-    # Optional local demo without requiring pandas in CI/tests.
-    grid_ = bin_tree_maze(15, 15)
-    solved_grid, path_ = solve_maze(grid_)
-    add_path_to_grid(grid_, path_)
-    # Simple print
-    for row in grid_:
-        print("".join(str(c) for c in row))
