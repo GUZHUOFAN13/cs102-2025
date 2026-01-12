@@ -4,59 +4,42 @@ from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 
-Cell = Union[str, int]
-Grid = List[List[Cell]]
-Coord = Tuple[int, int]
 
-
-def create_grid(rows: int = 15, cols: int = 15) -> Grid:
+def create_grid(rows: int = 15, cols: int = 15) -> List[List[Union[str, int]]]:
     return [["■"] * cols for _ in range(rows)]
 
 
-def remove_wall(grid: Grid, coord: Coord) -> Grid:
-    """
-    Удаляет стену в указанной координате (делает клетку проходом).
-    coord обычно — клетка-стена между двумя "комнатами" (odd-odd).
-    """
+def remove_wall(
+    grid: List[List[Union[str, int]]], coord: Tuple[int, int]
+) -> List[List[Union[str, int]]]:
     x, y = coord
     if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
         grid[x][y] = " "
     return grid
 
 
-def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
-    """
-    Генерация лабиринта алгоритмом Binary Tree.
-    Стены: '■'
-    Проходы: ' '
-    Вход/выход: 'X'
-    """
+def bin_tree_maze(
+    rows: int = 15, cols: int = 15, random_exit: bool = True
+) -> List[List[Union[str, int]]]:
     grid = create_grid(rows, cols)
-
-    empty_cells: List[Coord] = []
+    empty_cells = []
     for x, row in enumerate(grid):
         for y, _ in enumerate(row):
             if x % 2 == 1 and y % 2 == 1:
                 grid[x][y] = " "
                 empty_cells.append((x, y))
 
-    # ---- Binary Tree carving: for each room carve either UP or RIGHT ----
     for x, y in empty_cells:
-        candidates: List[Tuple[str, Coord]] = []
-
-        # up room: (x-2, y), wall between: (x-1, y)
-        if x - 2 >= 1 and grid[x - 2][y] == " ":
-            candidates.append(("U", (x - 1, y)))
-
-        # right room: (x, y+2), wall between: (x, y+1)
-        if y + 2 <= cols - 2 and grid[x][y + 2] == " ":
-            candidates.append(("R", (x, y + 1)))
-
+        candidates = []
+        if x - 2 >= 0:
+            candidates.append((x - 1, y))
+        if y + 2 < cols:
+            candidates.append((x, y + 1))
+        
         if candidates:
-            _, wall_coord = choice(candidates)
+            wall_coord = choice(candidates)
             remove_wall(grid, wall_coord)
 
-    # генерация входа и выхода
     if random_exit:
         x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
         y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
@@ -70,166 +53,117 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
     return grid
 
 
-def get_exits(grid: Grid) -> List[Coord]:
-    """Вернуть координаты всех выходов/входов (клетки со значением 'X')."""
-    exits: List[Coord] = []
-    for i, row in enumerate(grid):
-        for j, val in enumerate(row):
-            if val == "X":
+def get_exits(grid: List[List[Union[str, int]]]) -> List[Tuple[int, int]]:
+    exits = []
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            if grid[i][j] == "X":
                 exits.append((i, j))
     return exits
 
 
-def make_step(grid: Grid, k: int) -> Grid:
-    """
-    Один шаг "волны": из всех клеток со значением k
-    распространиться в соседние пустые клетки " " и пометить их k+1.
-    """
+def make_step(grid: List[List[Union[str, int]]], k: int) -> List[List[Union[str, int]]]:
     rows, cols = len(grid), len(grid[0])
     new_grid = deepcopy(grid)
-
     for i in range(rows):
         for j in range(cols):
-            if new_grid[i][j] == k:
-                for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            if grid[i][j] == k:
+                for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     ni, nj = i + di, j + dj
-                    if 0 <= ni < rows and 0 <= nj < cols and new_grid[ni][nj] == " ":
+                    if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == " ":
                         new_grid[ni][nj] = k + 1
-
     return new_grid
 
 
-def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[Union[Coord, List[Coord]]]:
-    """
-    Восстановить кратчайший путь от старта (клетка с 0) до exit_coord (вторая 'X'),
-    двигаясь по убывающим числам.
-    Возвращает список координат пути (включая обе точки).
-    """
+def shortest_path(
+    grid: List[List[Union[str, int]]], exit_coord: Tuple[int, int]
+) -> Optional[Union[Tuple[int, int], List[Tuple[int, int]]]]:
     rows, cols = len(grid), len(grid[0])
-
-    # найти старт (где стоит 0)
-    start: Optional[Coord] = None
+    start_pos = None
     for i in range(rows):
         for j in range(cols):
             if grid[i][j] == 0:
-                start = (i, j)
+                start_pos = (i, j)
                 break
-        if start is not None:
-            break
-    if start is None:
+    if not start_pos:
         return None
 
     ex, ey = exit_coord
-
-    # найти соседнюю клетку с числом (где волна подошла к выходу)
-    best_neighbor: Optional[Coord] = None
-    best_val: Optional[int] = None
-    for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+    curr = None
+    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
         if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
-            v = grid[ni][nj]
-            if best_val is None or v < best_val:
-                best_val = v
-                best_neighbor = (ni, nj)
-
-    if best_neighbor is None or best_val is None:
+            curr = (ni, nj)
+            break
+    
+    if not curr:
         return None
 
-    # восстановление: выход -> ... -> старт по убывающим значениям
-    path: List[Coord] = [exit_coord]
-    cur = best_neighbor
-    cur_val = best_val
-    path.append(cur)
-
-    while cur != start:
-        i, j = cur
-        next_cell: Optional[Coord] = None
-        next_val = cur_val - 1
-
-        for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+    path = [exit_coord, curr]
+    while curr != start_pos:
+        i, j = curr
+        target_val = grid[i][j] - 1
+        found_next = False
+        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
-            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
-
-        if next_cell is None:
+            if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == target_val:
+                curr = (ni, nj)
+                path.append(curr)
+                found_next = True
+                break
+        if not found_next:
             return None
-
-        cur = next_cell
-        cur_val = next_val
-        path.append(cur)
-
+            
     path.reverse()
     return path
 
 
-def encircled_exit(grid: Grid, coord: Coord) -> bool:
-    """
-    True если выход окружён стенами и из него нельзя сделать шаг в лабиринт.
-    """
-    rows, cols = len(grid), len(grid[0])
+def encircled_exit(grid: List[List[Union[str, int]]], coord: Tuple[int, int]) -> bool:
     x, y = coord
-    for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         nx, ny = x + di, y + dj
-        if 0 <= nx < rows and 0 <= ny < cols:
+        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
             if grid[nx][ny] == " ":
                 return False
     return True
 
 
-def solve_maze(grid: Grid) -> Tuple[Grid, Optional[Union[Coord, List[Coord]]]]:
-    """
-    Решение волновым алгоритмом (BFS-метки).
-    Возвращает (grid_with_marks, path_coords or None).
-    Исходный grid НЕ меняет.
-    """
+def solve_maze(
+    grid: List[List[Union[str, int]]],
+) -> Tuple[List[List[Union[str, int]]], Optional[Union[Tuple[int, int], List[Tuple[int, int]]]]]:
     work = deepcopy(grid)
     exits = get_exits(work)
     if len(exits) < 2:
         return work, None
 
-    start_exit, end_exit = exits[0], exits[1]
+    start_node, end_node = exits[0], exits[1]
+    work[start_node[0]][start_node[1]] = 0
 
-    # пометим старт как 0
-    sx, sy = start_exit
-    work[sx][sy] = 0
-
-    k = 0
-    while True:
+    max_steps = len(work) * len(work[0])
+    for k in range(max_steps):
         new_work = make_step(work, k)
-
-        # волна не расширилась — пути нет
         if new_work == work:
-            return work, None
-
+            break
         work = new_work
 
-        # проверка: подошли ли к выходу (есть сосед с int)
-        ex, ey = end_exit
+        ex, ey = end_node
         reached = False
-        for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if (
-                0 <= ni < len(work)
-                and 0 <= nj < len(work[0])
-                and isinstance(work[ni][nj], int)
-            ):
+            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
                 reached = True
                 break
-
+        
         if reached:
-            break
+            path = shortest_path(work, end_node)
+            return work, path
 
-        k += 1
-        if k > len(work) * len(work[0]):  # защита
-            return work, None
-
-    path = shortest_path(work, end_exit)
-    return work, path
+    return work, None
 
 
-def add_path_to_grid(grid: Grid, path: Optional[Union[Coord, List[Coord]]]) -> Grid:
-    """
-    Рисует путь в grid символом 'X' по координатам path.
-    """
+def add_path_to_grid(
+    grid: List[List[Union[str, int]]], path: Optional[Union[Tuple[int, int], List[Tuple[int, int]]]]
+) -> List[List[Union[str, int]]]:
     if path:
         for i, row in enumerate(grid):
             for j, _ in enumerate(row):
@@ -239,7 +173,6 @@ def add_path_to_grid(grid: Grid, path: Optional[Union[Coord, List[Coord]]]) -> G
 
 
 if __name__ == "__main__":
-    print(pd.DataFrame(bin_tree_maze(15, 15)))
     GRID = bin_tree_maze(15, 15)
     print(pd.DataFrame(GRID))
     _, PATH = solve_maze(GRID)
