@@ -133,13 +133,12 @@ def make_step(grid: Grid, k: int) -> Grid:
     return new_grid
 
 
-def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
-    """
-    Reconstruct path from exit to start (cell with value 0) by descending numbers.
-    """
+def shortest_path(
+    grid: List[List[Union[str, int]]], exit_coord: Tuple[int, int]
+) -> Optional[Union[Tuple[int, int], List[Tuple[int, int]]]]:
     rows, cols = len(grid), len(grid[0])
 
-    start_pos: Optional[Coord] = None
+    start_pos: Optional[Tuple[int, int]] = None
     for i in range(rows):
         for j in range(cols):
             if grid[i][j] == 0:
@@ -147,34 +146,38 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
                 break
         if start_pos is not None:
             break
+
     if start_pos is None:
         return None
 
     ex, ey = exit_coord
 
-    # choose the smallest integer neighbor of exit (more stable)
-    curr: Optional[Coord] = None
+    curr: Optional[Tuple[int, int]] = None
     curr_val: Optional[int] = None
+
+    # choose the smallest integer neighbor of the exit
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
-        if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
+        if 0 <= ni < rows and 0 <= nj < cols:
             v = grid[ni][nj]
-            if curr_val is None or v < curr_val:
-                curr_val = v
-                curr = (ni, nj)
+            if isinstance(v, int):
+                if curr_val is None or v < curr_val:
+                    curr_val = v
+                    curr = (ni, nj)
 
     if curr is None:
         return None
 
-    path: List[Coord] = [exit_coord, curr]
+    path: List[Tuple[int, int]] = [exit_coord, curr]
 
     while curr != start_pos:
         i, j = curr
-        if not isinstance(grid[i][j], int):
+        cell = grid[i][j]
+        if not isinstance(cell, int):
             return None
 
-        target_val = grid[i][j] - 1
-        next_cell: Optional[Coord] = None
+        target_val = cell - 1
+        next_cell: Optional[Tuple[int, int]] = None
 
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             ni, nj = i + di, j + dj
