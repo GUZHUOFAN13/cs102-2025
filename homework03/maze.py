@@ -34,11 +34,10 @@ def bin_tree_maze(
     :param random_exit:
     :return:
     """
-
     grid = create_grid(rows, cols)
     empty_cells = []
-    for x, row in enumerate(grid):
-        for y, _ in enumerate(row):
+    for x in range(len(grid)):
+        for y in range(len(grid[0])):
             if x % 2 == 1 and y % 2 == 1:
                 grid[x][y] = " "
                 empty_cells.append((x, y))
@@ -115,12 +114,13 @@ def shortest_path(
     :return:
     """
     r, c = exit_coord
-    if not isinstance(grid[r][c], int):
+    cell_val = grid[r][c]
+    if not isinstance(cell_val, int):
         return None
 
     path = [exit_coord]
     curr_r, curr_c = r, c
-    curr_val = grid[r][c]
+    curr_val = cell_val
 
     while curr_val > 1:
         found = False
@@ -178,7 +178,8 @@ def solve_maze(
     max_steps = len(grid) * len(grid[0])
     for k in range(1, max_steps):
         work_grid = make_step(work_grid, k)
-        if isinstance(work_grid[end_pos[0]][end_pos[1]], int):
+        end_val = work_grid[end_pos[0]][end_pos[1]]
+        if isinstance(end_val, int) and end_val > 0:
             path = shortest_path(work_grid, end_pos)
             return work_grid, path
 
@@ -194,7 +195,6 @@ def add_path_to_grid(
     :param path:
     :return:
     """
-
     if path:
         for r, c in path:
             grid[r][c] = "X"
@@ -202,7 +202,8 @@ def add_path_to_grid(
 
 
 if __name__ == "__main__":
-    print(pd.DataFrame(bin_tree_maze(15, 15)))
+    grid_init = bin_tree_maze(15, 15)
+    print(pd.DataFrame(grid_init))
     GRID = bin_tree_maze(15, 15)
     print(pd.DataFrame(GRID))
     _, PATH = solve_maze(GRID)
