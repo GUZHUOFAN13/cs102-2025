@@ -12,15 +12,11 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 
 
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
-    """
-    Удаляет стену в указанной клетке (делает пробел).
-    Возвращает НОВУЮ копию grid (не меняет исходный).
-    """
     x, y = coord
-    new_grid = deepcopy(grid)
-    if 0 <= x < len(new_grid) and 0 <= y < len(new_grid[0]):
-        new_grid[x][y] = " "
-    return new_grid
+    if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
+        grid[x][y] = " "
+    return grid
+
 
 
 def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
@@ -125,10 +121,11 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
         candidates: List[Tuple[int, Coord]] = []
         for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
-                v = grid[ni][nj]
-                if v > 0:
-                    candidates.append((v, (ni, nj)))
+            if 0 <= ni < rows and 0 <= nj < cols:
+             cell = grid[ni][nj]
+             if isinstance(cell, int) and cell > 0:
+                 candidates.append((cell, (ni, nj)))
+
         if not candidates:
             return None
         candidates.sort(key=lambda t: t[0])
