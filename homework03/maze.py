@@ -139,11 +139,13 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 
         for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             ni, nj = ex + di, ey + dj
-            if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
-                v = grid[ni][nj]
-                if best_val is None or v < best_val:
-                    best_val = v
-                    best = (ni, nj)
+            if 0 <= ni < rows and 0 <= nj < cols:
+                cell = grid[ni][nj]
+                if isinstance(cell, int):
+                    v: int = cell
+                    if best_val is None or v < best_val:
+                        best_val = v
+                        best = (ni, nj)
 
         if best is None:
             return None
@@ -216,6 +218,8 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
 
         if reached:
             path = shortest_path(work, end_node)
+            if path:
+                path.reverse()
             return work, path
 
     return work, None
