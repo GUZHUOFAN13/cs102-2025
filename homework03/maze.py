@@ -18,7 +18,6 @@ def remove_wall(grid: Grid, coord: Coord) -> Grid:
     return grid
 
 
-
 def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> Grid:
     grid = create_grid(rows, cols)
 
