@@ -124,7 +124,7 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
             if 0 <= ni < rows and 0 <= nj < cols:
                 cell = grid[ni][nj]
                 if isinstance(cell, int) and cell > 0:
-                 candidates.append((cell, (ni, nj)))
+                    candidates.append((cell, (ni, nj)))
 
         if not candidates:
             return None
