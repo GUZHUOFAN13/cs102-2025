@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 
-
 Cell = Union[str, int]
 Grid = List[List[Cell]]
 Coord = Tuple[int, int]
@@ -61,7 +60,9 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
     if random_exit:
         x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
         y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
-        y_out = randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
+        y_out = (
+            randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
+        )
     else:
         x_in, y_in = 0, cols - 2
         x_out, y_out = rows - 1, 1
@@ -210,7 +211,11 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[Union[Coord, List[Coord]]]]:
         reached = False
         for di, dj in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             ni, nj = ex + di, ey + dj
-            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
+            if (
+                0 <= ni < len(work)
+                and 0 <= nj < len(work[0])
+                and isinstance(work[ni][nj], int)
+            ):
                 reached = True
                 break
 
