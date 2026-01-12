@@ -122,9 +122,9 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
         for di, dj in [(-1, 0), (0, -1), (1, 0), (0, 1)]:
             ni, nj = ex + di, ey + dj
             if 0 <= ni < rows and 0 <= nj < cols:
-             cell = grid[ni][nj]
-             if isinstance(cell, int) and cell > 0:
-                 candidates.append((cell, (ni, nj)))
+                 cell = grid[ni][nj]
+                 if isinstance(cell, int) and cell > 0:
+                     candidates.append((cell, (ni, nj)))
 
         if not candidates:
             return None
