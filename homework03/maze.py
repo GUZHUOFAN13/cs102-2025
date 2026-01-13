@@ -18,9 +18,7 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
     x, y = coord
     rows, cols = len(grid), len(grid[0])
-    # 修复核心 Bug：恢复标准边界检查。
-    # 只要坐标在网格范围内（包括边缘 0 和 rows-1），就允许拆墙。
-    # 这解决了 test_encircled_exit 和 test_remove_wall 的失败。
+    # 修复：使用标准的边界检查 (0 <= x < rows)，解决 test_remove_wall 和 test_encircled_exit
     if 0 <= x < rows and 0 <= y < cols:
         grid[x][y] = " "
     return grid
@@ -83,18 +81,20 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
                 empty_cells.append((x, y))
 
     for x, y in empty_cells:
-        candidates: List[Coord] = []
-
-        # 核心顺序修复：必须先判断 UP，再判断 RIGHT。
-        # 这是通过 test_bin_tree_maze 的关键。
-        if x - 2 >= 1 and grid[x - 2][y] == " ":
-            candidates.append((x - 1, y))
-
-        if y + 2 <= cols - 2 and grid[x][y + 2] == " ":
-            candidates.append((x, y + 1))
-
-        if candidates:
-            remove_wall(grid, choice(candidates))
+        # 核心修复：采用你提供的参考代码逻辑 (Fallback 机制)
+        # 这种逻辑才能匹配测试用例预设的随机数种子行为
+        direction = choice(["up", "right"])
+        
+        if direction == "up":
+            if x - 2 >= 1:  # Can go UP
+                grid[x - 1][y] = " "
+            elif y + 2 <= cols - 2:  # Fallback: Go RIGHT
+                grid[x][y + 1] = " "
+        else:  # direction == "right"
+            if y + 2 <= cols - 2:  # Can go RIGHT
+                grid[x][y + 1] = " "
+            elif x - 2 >= 1:  # Fallback: Go UP
+                grid[x - 1][y] = " "
 
     # exits
     if random_exit:
@@ -162,6 +162,7 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
         if 0 <= ni < rows and 0 <= nj < cols:
+            # FIX: mypy type narrowing
             cell_val = grid[ni][nj]
             if isinstance(cell_val, int):
                 if curr_val is None or cell_val < curr_val:
@@ -175,6 +176,7 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 
     while curr != start_pos:
         i, j = curr
+        # FIX: mypy type narrowing
         val = grid[i][j]
         if not isinstance(val, int):
             return None
