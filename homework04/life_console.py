@@ -20,3 +20,4 @@ class Console(UI):
         screen = curses.initscr()
         # PUT YOUR CODE HERE
         curses.endwin()
+        
