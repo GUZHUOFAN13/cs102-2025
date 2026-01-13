@@ -18,8 +18,8 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
     x, y = coord
     rows, cols = len(grid), len(grid[0])
-    # FIX: Only remove wall if it is strictly inside the grid (preserve borders)
-    # 修复：只有当坐标在网格内部（不包括最外圈边框）时才移除墙壁
+    # 修复核心逻辑：增加边界检查
+    # 只有当坐标在网格内部（不触碰最外圈边框）时，才允许移除墙壁
     if 0 < x < rows - 1 and 0 < y < cols - 1:
         grid[x][y] = " "
     return grid
@@ -161,7 +161,8 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
         if 0 <= ni < rows and 0 <= nj < cols:
-            # FIX: Extract variable first to satisfy mypy narrowing
+            # FIX: mypy type narrowing
+            # 修复：先提取变量以满足 mypy 类型检查
             cell_val = grid[ni][nj]
             if isinstance(cell_val, int):
                 if curr_val is None or cell_val < curr_val:
@@ -175,7 +176,8 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 
     while curr != start_pos:
         i, j = curr
-        # FIX: Extract variable first to satisfy mypy
+        # FIX: mypy type narrowing
+        # 修复：先提取变量以满足 mypy 类型检查
         val = grid[i][j]
         if not isinstance(val, int):
             return None
