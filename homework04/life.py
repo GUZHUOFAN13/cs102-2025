@@ -137,3 +137,4 @@ class GameOfLife:
             for row in self.curr_generation:
                 line = "".join(str(cell) for cell in row)
                 f.write(line + "\n")
+                

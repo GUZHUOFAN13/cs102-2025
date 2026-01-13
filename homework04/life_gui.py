@@ -91,11 +91,12 @@ class GUI(UI):
 
 
 if __name__ == "__main__":
-    # 1. 创建游戏逻辑对象 (20行 20列，随机初始化)
+    # 1. Create game logic object (20 rows, 20 cols, random)
     game = GameOfLife((20, 20), randomize=True)
 
-    # 2. 创建界面对象
+    # 2. Create GUI object
     gui = GUI(game)
 
-    # 3. 启动游戏
+    # 3. Start game
     gui.run()
+    
