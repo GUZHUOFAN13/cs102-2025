@@ -15,7 +15,7 @@ class GUI(UI):
         self.height = self.life.rows * cell_size
         self.screen_size = self.width, self.height
 
-        # Initialize pygame and screen here to satisfy Mypy
+        # Initialize pygame explicitly to fix MyPy errors
         pygame.init()
         self.screen = pygame.display.set_mode(self.screen_size)
         self.clock = pygame.time.Clock()
@@ -91,12 +91,6 @@ class GUI(UI):
 
 
 if __name__ == "__main__":
-    # 1. Create game logic object (20 rows, 20 cols, random)
     game = GameOfLife((20, 20), randomize=True)
-
-    # 2. Create GUI object
     gui = GUI(game)
-
-    # 3. Start game
     gui.run()
-    
