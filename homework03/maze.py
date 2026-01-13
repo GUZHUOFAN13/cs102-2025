@@ -157,11 +157,13 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     curr_val: Optional[int] = None
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
-        if 0 <= ni < rows and 0 <= nj < cols and isinstance(grid[ni][nj], int):
-            v = grid[ni][nj]
-            if curr_val is None or v < curr_val:
-                curr_val = v
-                curr = (ni, nj)
+        if 0 <= ni < rows and 0 <= nj < cols:
+            # FIX: Extract variable first to satisfy mypy narrowing
+            cell_val = grid[ni][nj]
+            if isinstance(cell_val, int):
+                if curr_val is None or cell_val < curr_val:
+                    curr_val = cell_val
+                    curr = (ni, nj)
 
     if curr is None:
         return None
@@ -170,10 +172,12 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 
     while curr != start_pos:
         i, j = curr
-        if not isinstance(grid[i][j], int):
+        # FIX: Extract variable first to satisfy mypy
+        val = grid[i][j]
+        if not isinstance(val, int):
             return None
 
-        target_val = grid[i][j] - 1
+        target_val = val - 1
         next_cell: Optional[Coord] = None
 
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
