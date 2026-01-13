@@ -16,10 +16,23 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 
 
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
+    directions = ["up", "right"]
     x, y = coord
     rows, cols = len(grid), len(grid[0])
-    if 0 <= x < rows and 0 <= y < cols:
-        grid[x][y] = " "
+
+    direction = choice(directions)
+    if direction == "up":
+        if 0 <= x - 2 < rows and 0 <= y < cols:
+            grid[x - 1][y] = " "
+        else:
+            direction = "right"
+
+    if direction == "right":
+        if 0 <= x < rows and 0 <= y + 2 < cols:
+            grid[x][y + 1] = " "
+        elif 0 <= x - 2 < rows and 0 <= y < cols:
+            grid[x - 1][y] = " "
+
     return grid
 
 
@@ -32,25 +45,12 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
                 grid[x][y] = " "
                 empty_cells.append((x, y))
 
-    for x, y in empty_cells:
-        direction = choice(["up", "right"])
-        can_go_up = x > 1
-        can_go_right = y < cols - 2
-
-        if direction == "up":
-            if can_go_up:
-                grid[x - 1][y] = " "
-            elif can_go_right:
-                grid[x][y + 1] = " "
-        elif direction == "right":
-            if can_go_right:
-                grid[x][y + 1] = " "
-            elif can_go_up:
-                grid[x - 1][y] = " "
+    while empty_cells:
+        x, y = empty_cells.pop(0)
+        remove_wall(grid, (x, y))
 
     if random_exit:
-        x_in = randint(0, rows - 1)
-        x_out = randint(0, rows - 1)
+        x_in, x_out = randint(0, rows - 1), randint(0, rows - 1)
         y_in = randint(0, cols - 1) if x_in in (0, rows - 1) else choice((0, cols - 1))
         y_out = randint(0, cols - 1) if x_out in (0, rows - 1) else choice((0, cols - 1))
     else:
@@ -63,105 +63,125 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
 
 
 def get_exits(grid: Grid) -> List[Coord]:
-    exits = []
-    for i in range(len(grid)):
-        for j in range(len(grid[0])):
-            if grid[i][j] == "X":
-                exits.append((i, j))
-    return exits
+    return [(x, y) for x, row in enumerate(grid) for y, elem in enumerate(row) if elem == "X"]
 
 
 def make_step(grid: Grid, k: int) -> Grid:
+    all_coords = []
     rows, cols = len(grid), len(grid[0])
-    new_grid = deepcopy(grid)
+    for x in range(rows):
+        for y in range(cols):
+            if grid[x][y] == k:
+                all_coords.append((x, y))
 
-    for i in range(rows):
-        for j in range(cols):
-            if grid[i][j] == k:
-                for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    ni, nj = i + di, j + dj
-                    if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == " ":
-                        new_grid[ni][nj] = k + 1
-    return new_grid
+    k += 1
+    for x, y in all_coords:
+        possible_pos = [
+            (x - 1, y),
+            (x + 1, y),
+            (x, y - 1),
+            (x, y + 1),
+        ]
+        for nx, ny in possible_pos:
+            if 0 <= nx < rows and 0 <= ny < cols and grid[nx][ny] == 0:
+                grid[nx][ny] = k
+    return grid
 
 
 def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
-    rows, cols = len(grid), len(grid[0])
     ex, ey = exit_coord
-
+    # Ensure the exit cell has a numeric step value
     if not isinstance(grid[ex][ey], int):
         return None
+    
+    path_len = int(grid[ex][ey])
+    cur_coord = exit_coord
+    path = [cur_coord]
+    
+    rows, cols = len(grid), len(grid[0])
+    k = path_len
 
-    path = [exit_coord]
-    curr = exit_coord
-    curr_val = int(grid[ex][ey])
-
-    start_pos = None
-    for i in range(rows):
-        for j in range(cols):
-            if grid[i][j] == 0:
-                start_pos = (i, j)
-                break
-        if start_pos:
-            break
-
-    if not start_pos:
-        return None
-
-    while curr != start_pos:
-        target_val = curr_val - 1
+    while k > 1:
+        possible_pos = [
+            (cur_coord[0] - 1, cur_coord[1]),
+            (cur_coord[0] + 1, cur_coord[1]),
+            (cur_coord[0], cur_coord[1] - 1),
+            (cur_coord[0], cur_coord[1] + 1),
+        ]
         found_next = False
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = curr[0] + di, curr[1] + dj
-            if 0 <= ni < rows and 0 <= nj < cols:
-                if grid[ni][nj] == target_val:
-                    curr = (ni, nj)
-                    curr_val = target_val
-                    path.append(curr)
+        for nx, ny in possible_pos:
+            if 0 <= nx < rows and 0 <= ny < cols:
+                val = grid[nx][ny]
+                if isinstance(val, int) and val == k - 1:
+                    path.append((nx, ny))
+                    cur_coord = (nx, ny)
+                    k -= 1
                     found_next = True
                     break
+        
         if not found_next:
             return None
 
-    path.reverse()
     return path
 
 
 def encircled_exit(grid: Grid, coord: Coord) -> bool:
     x, y = coord
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nx, ny = x + di, y + dj
-        if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]) and grid[nx][ny] == " ":
-            return False
-    return True
+    rows, cols = len(grid), len(grid[0])
+    
+    # Check strict corners
+    if (x == 0 and y == 0) or (x == rows - 1 and y == cols - 1):
+        return True
+    if (x == 0 and y == cols - 1) or (x == rows - 1 and y == 0):
+        return True
+
+    # Check edges being blocked by walls
+    if x == rows - 1:
+        if grid[x - 1][y] != " ":
+            return True
+    elif x == 0:
+        if grid[x + 1][y] != " ":
+            return True
+    elif y == cols - 1:
+        if grid[x][y - 1] != " ":
+            return True
+    elif y == 0:
+        if grid[x][y + 1] != " ":
+            return True
+            
+    return False
 
 
 def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
-    work = deepcopy(grid)
-    exits = get_exits(work)
-    if len(exits) < 2:
-        return work, None
+    exits = get_exits(grid)
+    if len(exits) != 2:
+        return grid, None
 
-    start_node, end_node = exits[0], exits[1]
+    entrance, exit_ = exits[0], exits[1]
+    if encircled_exit(grid, entrance) or encircled_exit(grid, exit_):
+        return grid, None
 
-    if encircled_exit(work, start_node) and not encircled_exit(work, end_node):
-        pass
+    # Prepare grid for Wave Algorithm (0 for spaces, 1 for start)
+    k = 0
+    grid[entrance[0]][entrance[1]] = 1
+    
+    rows, cols = len(grid), len(grid[0])
+    for x in range(rows):
+        for y in range(cols):
+            if grid[x][y] == " " or grid[x][y] == "X":
+                if (x, y) != entrance:
+                    grid[x][y] = 0
 
-    work[start_node[0]][start_node[1]] = 0
+    # Propagate wave
+    while grid[exit_[0]][exit_[1]] == 0:
+        k += 1
+        prev_grid = deepcopy(grid)
+        make_step(grid, k)
+        if grid == prev_grid: # No progress made, path impossible
+            return grid, None
 
-    max_steps = len(work) * len(work[0])
-    for k in range(max_steps):
-        new_work = make_step(work, k)
-        if new_work == work:
-            break
-        work = new_work
-
-        ex, ey = end_node
-        if isinstance(work[ex][ey], int):
-            path = shortest_path(work, end_node)
-            return work, path
-
-    return work, None
+    path = shortest_path(grid, exit_)
+    return grid, path
 
 
 def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
@@ -170,6 +190,12 @@ def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
             for j, _ in enumerate(row):
                 if (i, j) in path:
                     grid[i][j] = "X"
+                    
+        # Clean up the numbers left by the wave algorithm
+        for i, row in enumerate(grid):
+            for j, _ in enumerate(row):
+                if isinstance(grid[i][j], int):
+                    grid[i][j] = " "
     return grid
 
 
