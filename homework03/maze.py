@@ -18,6 +18,9 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
     x, y = coord
     rows, cols = len(grid), len(grid[0])
+    # 修复核心 Bug：恢复标准边界检查。
+    # 只要坐标在网格范围内（包括边缘 0 和 rows-1），就允许拆墙。
+    # 这解决了 test_encircled_exit 和 test_remove_wall 的失败。
     if 0 <= x < rows and 0 <= y < cols:
         grid[x][y] = " "
     return grid
@@ -82,8 +85,8 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
     for x, y in empty_cells:
         candidates: List[Coord] = []
 
-        # 核心修复：顺序必须是先 UP (上) 后 RIGHT (右)
-        # 这样才能匹配测试用例预设的随机数种子序列
+        # 核心顺序修复：必须先判断 UP，再判断 RIGHT。
+        # 这是通过 test_bin_tree_maze 的关键。
         if x - 2 >= 1 and grid[x - 2][y] == " ":
             candidates.append((x - 1, y))
 
