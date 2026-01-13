@@ -116,4 +116,3 @@ class GameOfLife:
             Новое поколение клеток.
         """
         pass
-    
