@@ -144,9 +144,8 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
 
     start_node, end_node = exits[0], exits[1]
 
-    if encircled_exit(work, start_node) and not encircled_exit(work, end_node):
-        # Do not swap! The test expects the path order to match get_exits order.
-        pass
+    # No swapping logic here. 
+    # The test expects path from exits[0] to exits[1].
 
     work[start_node[0]][start_node[1]] = 0
 
