@@ -1,97 +1,112 @@
-import pygame
-from life import GameOfLife
-from pygame.locals import *
-from ui import UI
+import pathlib
+import random
+import typing as tp
+
+Cell = tp.Tuple[int, int]
+Cells = tp.List[int]
+Grid = tp.List[Cells]
 
 
-class GUI(UI):
-    def __init__(self, life: GameOfLife, cell_size: int = 10, speed: int = 10) -> None:
-        super().__init__(life)
-        self.cell_size = cell_size
-        self.speed = speed
+class GameOfLife:
+    def __init__(
+        self,
+        size: tp.Tuple[int, int],
+        randomize: bool = True,
+        max_generations: tp.Optional[float] = float("inf"),
+    ) -> None:
+        # Size of the grid
+        self.rows, self.cols = size
+        # Previous generation
+        self.prev_generation = self.create_grid()
+        # Current generation
+        self.curr_generation = self.create_grid(randomize=randomize)
+        # Max generations
+        self.max_generations = max_generations
+        # Current generation counter
+        self.generations = 1
 
-        # Calculate window width and height based on grid size
-        self.width = self.life.cols * cell_size
-        self.height = self.life.rows * cell_size
-        self.screen_size = self.width, self.height
+    def create_grid(self, randomize: bool = False) -> Grid:
+        grid = []
+        for i in range(self.rows):
+            row = []
+            for j in range(self.cols):
+                if randomize:
+                    row.append(random.randint(0, 1))
+                else:
+                    row.append(0)
+            grid.append(row)
+        return grid
 
-        # Initialize pygame and screen here to satisfy Mypy
-        pygame.init()
-        self.screen = pygame.display.set_mode(self.screen_size)
-        self.clock = pygame.time.Clock()
-        pygame.display.set_caption("Game of Life")
+    def get_neighbours(self, cell: Cell) -> Cells:
+        row, col = cell
+        neighbours = []
 
-    def draw_lines(self) -> None:
-        """
-        Draws the grid lines.
-        """
-        for x in range(0, self.width, self.cell_size):
-            pygame.draw.line(self.screen, pygame.Color("black"), (x, 0), (x, self.height))
-        for y in range(0, self.height, self.cell_size):
-            pygame.draw.line(self.screen, pygame.Color("black"), (0, y), (self.width, y))
+        for i in range(row - 1, row + 2):
+            for j in range(col - 1, col + 2):
+                if i == row and j == col:
+                    continue
 
-    def draw_grid(self) -> None:
-        """
-        Draws the cells. Green for alive, White (background) for dead.
-        """
-        for i in range(self.life.rows):
-            for j in range(self.life.cols):
-                # Calculate the position of the rect
-                x = j * self.cell_size
-                y = i * self.cell_size
-                rect = pygame.Rect(x, y, self.cell_size, self.cell_size)
+                if 0 <= i < self.rows and 0 <= j < self.cols:
+                    neighbours.append(self.curr_generation[i][j])
 
-                # If cell is alive (1), draw it green
-                if self.life.curr_generation[i][j] == 1:
-                    pygame.draw.rect(self.screen, pygame.Color("green"), rect)
+        return neighbours
 
-    def run(self) -> None:
-        """
-        Main game loop.
-        """
-        running = True
-        paused = False
+    def get_next_generation(self) -> Grid:
+        new_grid = self.create_grid(randomize=False)
 
-        while running:
-            # 1. Handle events (Quit, Pause)
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    running = False
-                elif event.type == KEYDOWN:
-                    if event.key == K_SPACE:
-                        paused = not paused
+        for i in range(self.rows):
+            for j in range(self.cols):
+                neighbours = self.get_neighbours((i, j))
+                alive_neighbours = sum(neighbours)
+                current_state = self.curr_generation[i][j]
 
-                elif event.type == MOUSEBUTTONDOWN:
-                    # Optional: Allow user to toggle cells by clicking
-                    click_x, click_y = pygame.mouse.get_pos()
-                    grid_x = click_x // self.cell_size
-                    grid_y = click_y // self.cell_size
-                    # Toggle cell state
-                    current = self.life.curr_generation[grid_y][grid_x]
-                    self.life.curr_generation[grid_y][grid_x] = 0 if current else 1
+                if current_state == 1:
+                    if alive_neighbours in [2, 3]:
+                        new_grid[i][j] = 1
+                    else:
+                        new_grid[i][j] = 0
+                else:
+                    if alive_neighbours == 3:
+                        new_grid[i][j] = 1
+                    else:
+                        new_grid[i][j] = 0
 
-            # 2. Draw everything
-            self.screen.fill(pygame.Color("white"))
-            self.draw_grid()
-            self.draw_lines()
+        return new_grid
 
-            # 3. Update game state
-            if not paused:
-                self.life.step()
+    def step(self) -> None:
+        self.prev_generation = self.curr_generation
+        self.curr_generation = self.get_next_generation()
+        self.generations += 1
 
-            # 4. Update display
-            pygame.display.flip()
-            self.clock.tick(self.speed)
+    @property
+    def is_max_generations_exceeded(self) -> bool:
+        if self.max_generations == float("inf"):
+            return False
+        return self.generations >= self.max_generations
 
-        pygame.quit()
+    @property
+    def is_changing(self) -> bool:
+        return self.curr_generation != self.prev_generation
 
+    @staticmethod
+    def from_file(filename: pathlib.Path) -> "GameOfLife":
+        with open(filename, "r") as f:
+            lines = f.readlines()
 
-if __name__ == "__main__":
-    # 1. Create game logic object (20 rows, 20 cols, random)
-    game = GameOfLife((20, 20), randomize=True)
+        grid = []
+        for line in lines:
+            row = [int(char) for char in line.strip()]
+            grid.append(row)
 
-    # 2. Create GUI object
-    gui = GUI(game)
+        rows = len(grid)
+        cols = len(grid[0]) if rows > 0 else 0
 
-    # 3. Start game
-    gui.run()
+        game = GameOfLife((rows, cols), randomize=False)
+        game.curr_generation = grid
+        return game
+
+    def save(self, filename: pathlib.Path) -> None:
+        with open(filename, "w") as f:
+            for row in self.curr_generation:
+                line = "".join(str(cell) for cell in row)
+                f.write(line + "\n")

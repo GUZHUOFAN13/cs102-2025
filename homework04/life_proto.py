@@ -1,5 +1,4 @@
 import typing as tp
-
 import pygame
 
 Cell = tp.Tuple[int, int]
@@ -24,24 +23,7 @@ class GameOfLife:
         pass
 
     def get_neighbours(self, cell: Cell) -> Cells:
-        """
-        Вернуть список соседних клеток для клетки `cell`.
-
-        Соседними считаются клетки по горизонтали, вертикали и диагоналям,
-        то есть, во всех направлениях.
-
-        Parameters
-        ----------
-        cell : Cell
-            Клетка, для которой необходимо получить список соседей. Клетка
-            представлена кортежем, содержащим ее координаты на игровом поле.
-
-        Returns
-        ----------
-        out : Cells
-            Список соседних клеток, в котором каждая позиция – 0 или 1.
-        """
-        pass
+        return []
 
     def get_next_generation(self) -> Grid:
         return []
