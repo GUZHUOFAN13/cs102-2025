@@ -1,7 +1,9 @@
+ALPHABET_SIZE = 26
+
+
 def encrypt_vigenere(plaintext: str, keyword: str) -> str:
     """
     Encrypts plaintext using a Vigenere cipher.
-
     >>> encrypt_vigenere("PYTHON", "A")
     'PYTHON'
     >>> encrypt_vigenere("python", "a")
@@ -10,17 +12,24 @@ def encrypt_vigenere(plaintext: str, keyword: str) -> str:
     'LXFOPVEFRNHR'
     """
     ciphertext = ""
-    keyword = keyword.lower()
+    key_idx = 0
     key_len = len(keyword)
-
-    for i, ch in enumerate(plaintext):
-        shift = ord(keyword[i % key_len]) - ord("a")
+    for key_idx, ch in enumerate(plaintext):
         if "A" <= ch <= "Z":
-            ciphertext += chr((ord(ch) - ord("A") + shift) % 26 + ord("A"))
+            a_letter_index = ord("A")
         elif "a" <= ch <= "z":
-            ciphertext += chr((ord(ch) - ord("a") + shift) % 26 + ord("a"))
+            a_letter_index = ord("a")
         else:
             ciphertext += ch
+            continue
+
+        pos = ord(ch) - a_letter_index
+        key_char = keyword[key_idx % key_len]
+        shift = ord(key_char) - a_letter_index
+        new_pos = pos + shift
+        new_ch = chr(a_letter_index + new_pos % ALPHABET_SIZE)
+        ciphertext += new_ch
+
     return ciphertext
 
 
@@ -36,15 +45,23 @@ def decrypt_vigenere(ciphertext: str, keyword: str) -> str:
     'ATTACKATDAWN'
     """
     plaintext = ""
-    keyword = keyword.lower()
     key_len = len(keyword)
+    key_idx = 0
 
-    for i, ch in enumerate(ciphertext):
-        shift = ord(keyword[i % key_len]) - ord("a")
+    for key_idx, ch in enumerate(ciphertext):
         if "A" <= ch <= "Z":
-            plaintext += chr((ord(ch) - ord("A") - shift) % 26 + ord("A"))
+            a_letter_index = ord("A")
         elif "a" <= ch <= "z":
-            plaintext += chr((ord(ch) - ord("a") - shift) % 26 + ord("a"))
+            a_letter_index = ord("a")
         else:
             plaintext += ch
+            continue
+
+        pos = ord(ch) - a_letter_index
+        key_let = keyword[key_idx % key_len]
+        shift = ord(key_let) - a_letter_index
+        new_pos = pos - shift
+        new_ch = chr(a_letter_index + new_pos % ALPHABET_SIZE)
+        plaintext += new_ch
+
     return plaintext
