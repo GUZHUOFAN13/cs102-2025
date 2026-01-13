@@ -90,14 +90,13 @@ def make_step(grid: Grid, k: int) -> Grid:
 
 def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     ex, ey = exit_coord
-    # Ensure the exit cell has a numeric step value
     if not isinstance(grid[ex][ey], int):
         return None
-    
+
     path_len = int(grid[ex][ey])
     cur_coord = exit_coord
     path = [cur_coord]
-    
+
     rows, cols = len(grid), len(grid[0])
     k = path_len
 
@@ -118,7 +117,7 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
                     k -= 1
                     found_next = True
                     break
-        
+
         if not found_next:
             return None
 
@@ -128,14 +127,12 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 def encircled_exit(grid: Grid, coord: Coord) -> bool:
     x, y = coord
     rows, cols = len(grid), len(grid[0])
-    
-    # Check strict corners
+
     if (x == 0 and y == 0) or (x == rows - 1 and y == cols - 1):
         return True
     if (x == 0 and y == cols - 1) or (x == rows - 1 and y == 0):
         return True
 
-    # Check edges being blocked by walls
     if x == rows - 1:
         if grid[x - 1][y] != " ":
             return True
@@ -148,7 +145,7 @@ def encircled_exit(grid: Grid, coord: Coord) -> bool:
     elif y == 0:
         if grid[x][y + 1] != " ":
             return True
-            
+
     return False
 
 
@@ -161,10 +158,9 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
     if encircled_exit(grid, entrance) or encircled_exit(grid, exit_):
         return grid, None
 
-    # Prepare grid for Wave Algorithm (0 for spaces, 1 for start)
     k = 0
     grid[entrance[0]][entrance[1]] = 1
-    
+
     rows, cols = len(grid), len(grid[0])
     for x in range(rows):
         for y in range(cols):
@@ -172,12 +168,11 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
                 if (x, y) != entrance:
                     grid[x][y] = 0
 
-    # Propagate wave
     while grid[exit_[0]][exit_[1]] == 0:
         k += 1
         prev_grid = deepcopy(grid)
         make_step(grid, k)
-        if grid == prev_grid: # No progress made, path impossible
+        if grid == prev_grid:
             return grid, None
 
     path = shortest_path(grid, exit_)
@@ -190,8 +185,7 @@ def add_path_to_grid(grid: Grid, path: Optional[List[Coord]]) -> Grid:
             for j, _ in enumerate(row):
                 if (i, j) in path:
                     grid[i][j] = "X"
-                    
-        # Clean up the numbers left by the wave algorithm
+
         for i, row in enumerate(grid):
             for j, _ in enumerate(row):
                 if isinstance(grid[i][j], int):
