@@ -18,7 +18,6 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
     x, y = coord
     rows, cols = len(grid), len(grid[0])
-    # 修复：使用标准的边界检查 (0 <= x < rows)，解决 test_remove_wall 和 test_encircled_exit
     if 0 <= x < rows and 0 <= y < cols:
         grid[x][y] = " "
     return grid
@@ -81,19 +80,19 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
                 empty_cells.append((x, y))
 
     for x, y in empty_cells:
-        # 核心修复：采用你提供的参考代码逻辑 (Fallback 机制)
-        # 这种逻辑才能匹配测试用例预设的随机数种子行为
         direction = choice(["up", "right"])
-        
+        can_go_up = x > 1
+        can_go_right = y < cols - 2
+
         if direction == "up":
-            if x - 2 >= 1:  # Can go UP
+            if can_go_up:
                 grid[x - 1][y] = " "
-            elif y + 2 <= cols - 2:  # Fallback: Go RIGHT
+            elif can_go_right:
                 grid[x][y + 1] = " "
-        else:  # direction == "right"
-            if y + 2 <= cols - 2:  # Can go RIGHT
+        elif direction == "right":
+            if can_go_right:
                 grid[x][y + 1] = " "
-            elif x - 2 >= 1:  # Fallback: Go UP
+            elif can_go_up:
                 grid[x - 1][y] = " "
 
     # exits
@@ -162,7 +161,6 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
     for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         ni, nj = ex + di, ey + dj
         if 0 <= ni < rows and 0 <= nj < cols:
-            # FIX: mypy type narrowing
             cell_val = grid[ni][nj]
             if isinstance(cell_val, int):
                 if curr_val is None or cell_val < curr_val:
@@ -176,7 +174,6 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
 
     while curr != start_pos:
         i, j = curr
-        # FIX: mypy type narrowing
         val = grid[i][j]
         if not isinstance(val, int):
             return None
