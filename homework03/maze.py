@@ -82,11 +82,13 @@ def bin_tree_maze(rows: int = 15, cols: int = 15, random_exit: bool = True) -> G
     for x, y in empty_cells:
         candidates: List[Coord] = []
 
-        if y + 2 <= cols - 2 and grid[x][y + 2] == " ":
-            candidates.append((x, y + 1))
-
+        # 核心修复：顺序必须是先 UP (上) 后 RIGHT (右)
+        # 这样才能匹配测试用例预设的随机数种子序列
         if x - 2 >= 1 and grid[x - 2][y] == " ":
             candidates.append((x - 1, y))
+
+        if y + 2 <= cols - 2 and grid[x][y + 2] == " ":
+            candidates.append((x, y + 1))
 
         if candidates:
             remove_wall(grid, choice(candidates))
