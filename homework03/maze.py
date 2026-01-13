@@ -17,7 +17,10 @@ def create_grid(rows: int = 15, cols: int = 15) -> Grid:
 
 def remove_wall(grid: Grid, coord: Coord) -> Grid:
     x, y = coord
-    if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
+    rows, cols = len(grid), len(grid[0])
+    # FIX: Only remove wall if it is strictly inside the grid (preserve borders)
+    # 修复：只有当坐标在网格内部（不包括最外圈边框）时才移除墙壁
+    if 0 < x < rows - 1 and 0 < y < cols - 1:
         grid[x][y] = " "
     return grid
 
