@@ -1,4 +1,5 @@
 import typing as tp
+
 import pygame
 
 Cell = tp.Tuple[int, int]
