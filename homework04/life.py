@@ -11,12 +11,7 @@ Grid = tp.List[Cells]
 
 
 class GameOfLife:
-    def __init__(
-        self,
-        size: tp.Tuple[int, int],
-        randomize: bool = True,
-        max_generations: tp.Optional[float] = float("inf"),
-    ) -> None:
+    def __init__(self, width: int = 640, height: int = 480, cell_size: int = 10, speed: int = 10) -> None:
         # Size of the grid
         self.rows, self.cols = size
         # Previous generation
@@ -137,4 +132,3 @@ class GameOfLife:
             for row in self.curr_generation:
                 line = "".join(str(cell) for cell in row)
                 f.write(line + "\n")
-                
