@@ -100,43 +100,32 @@ def shortest_path(grid: Grid, exit_coord: Coord) -> Optional[List[Coord]]:
         return None
 
     ex, ey = exit_coord
-
-    curr: Optional[Coord] = None
-    curr_val: Optional[int] = None
-    for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        ni, nj = ex + di, ey + dj
-        if 0 <= ni < rows and 0 <= nj < cols:
-            cell_val = grid[ni][nj]
-            if isinstance(cell_val, int):
-                if curr_val is None or cell_val < curr_val:
-                    curr_val = cell_val
-                    curr = (ni, nj)
-
-    if curr is None:
+    
+    # Check if exit is unreachable (still a space or wall)
+    if not isinstance(grid[ex][ey], int):
         return None
 
-    path: List[Coord] = [exit_coord, curr]
+    path: List[Coord] = [exit_coord]
+    curr = exit_coord
+    curr_val = int(grid[ex][ey])
 
     while curr != start_pos:
-        i, j = curr
-        val = grid[i][j]
-        if not isinstance(val, int):
-            return None
-
-        target_val = val - 1
-        next_cell: Optional[Coord] = None
-
+        target_val = curr_val - 1
+        found_next = False
+        
+        # Check neighbors for the target value
         for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < rows and 0 <= nj < cols and grid[ni][nj] == target_val:
-                next_cell = (ni, nj)
-                break
-
-        if next_cell is None:
+            ni, nj = curr[0] + di, curr[1] + dj
+            if 0 <= ni < rows and 0 <= nj < cols:
+                if grid[ni][nj] == target_val:
+                    curr = (ni, nj)
+                    curr_val = target_val
+                    path.append(curr)
+                    found_next = True
+                    break
+        
+        if not found_next:
             return None
-
-        curr = next_cell
-        path.append(curr)
 
     path.reverse()
     return path
@@ -162,26 +151,21 @@ def solve_maze(grid: Grid) -> Tuple[Grid, Optional[List[Coord]]]:
     if encircled_exit(work, start_node) and not encircled_exit(work, end_node):
         start_node, end_node = end_node, start_node
 
-    work[start_node[0]][start_node[1]] = 0
+    # Initialize start point
+    work[start_node[0]][start_node[1]] = 1
 
     max_steps = len(work) * len(work[0])
-    for k in range(max_steps):
+    for k in range(1, max_steps):
         new_work = make_step(work, k)
         if new_work == work:
             break
         work = new_work
-
+        
+        # If we reached the end node (it has a number now)
         ex, ey = end_node
-        reached = False
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = ex + di, ey + dj
-            if 0 <= ni < len(work) and 0 <= nj < len(work[0]) and isinstance(work[ni][nj], int):
-                reached = True
-                break
-
-        if reached:
-            path = shortest_path(work, end_node)
-            return work, path
+        if isinstance(work[ex][ey], int):
+             path = shortest_path(work, end_node)
+             return work, path
 
     return work, None
 
