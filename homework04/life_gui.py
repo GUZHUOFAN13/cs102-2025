@@ -14,16 +14,25 @@ class GUI(UI):
         self.width = self.life.cols * cell_size
         self.height = self.life.rows * cell_size
         self.screen_size = self.width, self.height
-        self.screen = None
+
+        # Initialize pygame and screen here to satisfy Mypy
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.screen_size)
+        self.clock = pygame.time.Clock()
+        pygame.display.set_caption("Game of Life")
 
     def draw_lines(self) -> None:
         """
         Draws the grid lines.
         """
         for x in range(0, self.width, self.cell_size):
-            pygame.draw.line(self.screen, pygame.Color("black"), (x, 0), (x, self.height))
+            pygame.draw.line(
+                self.screen, pygame.Color("black"), (x, 0), (x, self.height)
+            )
         for y in range(0, self.height, self.cell_size):
-            pygame.draw.line(self.screen, pygame.Color("black"), (0, y), (self.width, y))
+            pygame.draw.line(
+                self.screen, pygame.Color("black"), (0, y), (self.width, y)
+            )
 
     def draw_grid(self) -> None:
         """
@@ -44,11 +53,6 @@ class GUI(UI):
         """
         Main game loop.
         """
-        pygame.init()
-        clock = pygame.time.Clock()
-        pygame.display.set_caption("Game of Life")
-        self.screen = pygame.display.set_mode(self.screen_size)
-
         running = True
         paused = False
 
@@ -81,7 +85,7 @@ class GUI(UI):
 
             # 4. Update display
             pygame.display.flip()
-            clock.tick(self.speed)
+            self.clock.tick(self.speed)
 
         pygame.quit()
 
@@ -95,3 +99,4 @@ if __name__ == "__main__":
 
     # 3. Start game
     gui.run()
+    
