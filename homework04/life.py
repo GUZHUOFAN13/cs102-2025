@@ -49,15 +49,15 @@ class GameOfLife:
         """
         row, col = cell
         neighbours = []
-        
+
         for i in range(row - 1, row + 2):
             for j in range(col - 1, col + 2):
                 if i == row and j == col:
                     continue
-                
+
                 if 0 <= i < self.rows and 0 <= j < self.cols:
                     neighbours.append(self.curr_generation[i][j])
-        
+
         return neighbours
 
     def get_next_generation(self) -> Grid:
@@ -65,13 +65,13 @@ class GameOfLife:
         Calculates the next generation of cells.
         """
         new_grid = self.create_grid(randomize=False)
-        
+
         for i in range(self.rows):
             for j in range(self.cols):
                 neighbours = self.get_neighbours((i, j))
                 alive_neighbours = sum(neighbours)
                 current_state = self.curr_generation[i][j]
-                
+
                 if current_state == 1:
                     if alive_neighbours in [2, 3]:
                         new_grid[i][j] = 1
@@ -82,7 +82,7 @@ class GameOfLife:
                         new_grid[i][j] = 1
                     else:
                         new_grid[i][j] = 0
-                        
+
         return new_grid
 
     def step(self) -> None:
@@ -114,17 +114,17 @@ class GameOfLife:
         """
         Reads the grid state from a file.
         """
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             lines = f.readlines()
-        
+
         grid = []
         for line in lines:
             row = [int(char) for char in line.strip()]
             grid.append(row)
-            
+
         rows = len(grid)
         cols = len(grid[0]) if rows > 0 else 0
-        
+
         game = GameOfLife((rows, cols), randomize=False)
         game.curr_generation = grid
         return game
@@ -133,7 +133,7 @@ class GameOfLife:
         """
         Saves the current grid state to a file.
         """
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             for row in self.curr_generation:
                 line = "".join(str(cell) for cell in row)
                 f.write(line + "\n")
